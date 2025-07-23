@@ -1,25 +1,26 @@
-import logo from './logo.svg';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import LoginPage from './pages/login/loginPage';
+import SignupPage from './pages/signup/signupPage';
+import MainPage from './pages/dasolmain/mainPage';
+import DocumentBoard from './pages/board/documentBoard';
+import DocumentCreate from './pages/board/documentCreate';
+import UserPage from './pages/user/user';
 import './App.css';
 
+
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  return(
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/main" element={<MainPage />} />
+        <Route path="/document_board" element={<DocumentBoard />} />
+        <Route path="/document_create" element={<DocumentCreate />} />
+        <Route path="/user" element={<UserPage />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App;
