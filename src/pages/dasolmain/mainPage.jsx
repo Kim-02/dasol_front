@@ -17,9 +17,9 @@ function MainPage(){
         })
         .catch(err => {
             alert("로그인이 필요함");
-            navigate('/');
+            /* navigate('/'); */
         });
-    }, [navigate]);
+    }, []);
 
     const handleLogout = async () => {
         await doLogout();
