@@ -3,7 +3,7 @@ import './user.css'
 import { useNavigate, Link} from "react-router-dom";
 import { handleLogout, toggleDropdown} from "../../utils/boardUtils";
 
-const API_BASE = 'http://localhost:8081/api';
+const API_BASE = 'http://3.34.245.155/api';
 
 function UserPage(){
     const navigate = useNavigate();
@@ -37,7 +37,7 @@ function UserPage(){
                 setUser(json.result);
             } catch (err){
                 alert("회원 정보 불러오기 실패: " + err.message);
-                navigate('/');
+                /* navigate('/'); */
             }
         }
 
@@ -174,7 +174,7 @@ function UserPage(){
                         ) : (
                             events.map((ev, idx) => (
                                 <div className="event-card" key={idx}>
-                                    <div className="event-name">{ev.postTitle}</div>
+                                    <div className="event-name">{escapeHtml(ev.postTitle)}</div>
                                     <div className="field">
                                         <label>납입 여부:</label>
                                         <input type="checkbox" className="event-paid" disabled checked={ev.eventPaidSuccess} />
@@ -220,5 +220,16 @@ function UserPage(){
         </div>
     );
 }
+
+function escapeHtml(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 
 export default UserPage;
