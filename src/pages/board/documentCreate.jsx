@@ -29,10 +29,10 @@ function DocumentCreate(){
         })
         .catch(err => {
             alert("로그인이 필요함");
-            navigate('/');
+            /* navigate('/'); */
         });
 
-    }, [navigate]);
+    }, []);
     
 
   return (
