@@ -56,7 +56,7 @@ function UserPage(){
         }
         fetchUser();
         fetchEvents();
-    }, [navigate]);
+    }, []);
 
     const handleCheckPassword = async() => {
         if (!oldPassword) return alert('현재 비밀번호를 입력하세요.');
