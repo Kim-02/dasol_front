@@ -7,7 +7,8 @@ import { handleLogout, toggleDropdown, loadPosts, handleView, handleSave, handle
 
 function DocumentBoard(){
     const [userInfo, setUserInfo] = useState("로딩 중...");
-    const [dropdownOpen, setDropdownOpen] = useState(false); 
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [searchPosts, setSearchPosts] = useState("");
     const navigate = useNavigate();
 
     const [posts, setPosts] = useState([]);
@@ -15,6 +16,8 @@ function DocumentBoard(){
     const [viewPost, setViewPost] = useState(null);
     const [editMode, setEditMode] = useState(false);
     const [showModal, setShowModal] = useState(false);
+
+    const filterPosts = posts.filter(post => post.title.toLowerCase().includes(searchPosts.toLowerCase()) || post.content?.toLowerCase().includes(searchPosts.toLowerCase()));
 
     useEffect(() => {
         // 페이지 로드 시 정보 가져옴
@@ -25,11 +28,11 @@ function DocumentBoard(){
         })
         .catch(err => {
             alert("로그인이 필요함");
-            navigate('/');
+            /* navigate('/'); */
         });
 
         loadPosts(setLoading, setPosts);
-    }, [navigate]);
+    }, []);
     
 
     return(
@@ -76,8 +79,8 @@ function DocumentBoard(){
 
                 <div className="search-section">
                     <div className="search-box">
-                    <input type="text" id="searchInput" placeholder="제목 또는 내용으로 검색..."></input>
-                    <button className="btn-search" onClick={() => alert("검색 아직 미구현")}>검색</button>
+                    <input type="text" id="searchInput" value={searchPosts} onChange={(e) => setSearchPosts(e.target.value)} placeholder="제목 또는 내용으로 검색..."></input>
+                    <button className="btn-search" onClick={() => {if (!searchPosts.trim()){alert("검색어를 입력하세요.")}}}>검색</button>
                     </div>
                 </div>
 
@@ -94,9 +97,9 @@ function DocumentBoard(){
                         <div className="col-enddate">종료일시</div>
                     </div>
                     <div id="postsList" className="posts-list">
-                        {posts.length === 0 ? (
-                            <div className="no-data">등록된 문서가 없습니다.</div>
-                        ) : posts.map(post => (
+                        {filterPosts.length === 0 ? (
+                            <div className="no-data">{searchPosts.trim() ? "검색 결과 없음" : "등록된 문서 없음"}</div>
+                        ) : filterPosts.map(post => (
                             <div className="post-row" key={post.id} onClick={() => handleView(post.id, setViewPost, setEditMode, setShowModal)}>
                                 <div className="col-title">{post.title}</div>
                                 <div className="col-author">{post.memberName}</div>
@@ -170,7 +173,7 @@ function DocumentBoard(){
                                     </div>
                                     <div className="form-action">
                                         <button type="button" className="btn-cancel" onClick={() => cancelEdit(setEditMode)}>취소</button>
-                                        <button type="button" className="btn-submit" onClick={() => handleSave(viewPost, setShowModal, setViewPost, loadPosts)}>저장</button>
+                                        <button type="button" className="btn-submit" onClick={() => handleSave(viewPost, setShowModal, setViewPost, setLoading, setPosts)}>저장</button>
                                     </div>
                                 </form>
                             )}
