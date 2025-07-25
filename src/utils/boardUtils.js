@@ -1,6 +1,6 @@
 import { doLogout} from "./auth.js"
 
-const API_BASE_URL = 'http://localhost:8081/api/document';
+const API_BASE_URL = 'http://3.34.245.155/api/document';
 
 export async function handleLogout(navigate){
     await doLogout();
@@ -11,6 +11,7 @@ export function toggleDropdown(setDropdownOpen){
     setDropdownOpen(prev => !prev);
 }
 
+/* 게시판 불러오기 */
 export async function loadPosts(setLoading, setPosts) {
     setLoading(true);
     try{
@@ -31,7 +32,7 @@ export async function loadPosts(setLoading, setPosts) {
     }
 }
 
-/* DocumentPost 조회 */
+/* DocumentPost 조회 -> 게시판 클릭 시 함수 실행 */
 export async function handleView(postId, setViewPost, setEditMode, setShowModal){
     try {
         const res = await fetch(`${API_BASE_URL}/posts/get/${postId}`,{
@@ -52,7 +53,7 @@ export async function handleView(postId, setViewPost, setEditMode, setShowModal)
 }
 
 /* DocumentPost 수정 */
-export async function handleSave(viewPost, setShowModal, setViewPost, loadPosts){
+export async function handleSave(viewPost, setShowModal, setViewPost, setLoading, setPosts){
     try{
         const res = await fetch(`${API_BASE_URL}/posts/${viewPost.id}`, {
             method: 'PATCH',
@@ -68,7 +69,7 @@ export async function handleSave(viewPost, setShowModal, setViewPost, loadPosts)
     alert('수정 완료');
     setShowModal(false);
     setViewPost(null);
-    await loadPosts();
+    await loadPosts(setLoading, setPosts);
     } catch(err){
         alert('수정 실패: ' + err.message);
     }
