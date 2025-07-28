@@ -2,6 +2,7 @@ import React,{ useState, useEffect } from "react";
 import './user.css'
 import { useNavigate, Link} from "react-router-dom";
 import { handleLogout, toggleDropdown} from "../../utils/boardUtils";
+import { fetchWithAuth } from "../../utils/auth";
 
 const API_BASE = 'http://3.34.245.155/api';
 
@@ -17,16 +18,6 @@ function UserPage(){
     const [showChangeModal, setShowChangeModal] = useState(false);
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
-
-    const fetchWithAuth = (url, options = {}) => {
-        const headers = {
-            'Content-Type':   'application/json',
-            'Authorization':  localStorage.getItem('Authorization'),
-            'rAuthorization': localStorage.getItem('rAuthorization'),
-            ...options.headers,
-        };
-        return fetch(url, {...options, headers});
-    };
 
     useEffect(() => {
         async function fetchUser(){
