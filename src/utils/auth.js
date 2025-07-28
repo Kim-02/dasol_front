@@ -42,8 +42,9 @@ export async function doLogin(studentID, password){
 
 // 회원가입
 export async function doSignup(body){
-    const res = await fetchWithAuth(`${API_BASE_URL}/auth/signup`, {
+    const res = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(body)
     });
 
