@@ -1,3 +1,4 @@
+const API_BASE_URL = 'http://3.34.245.155/api';
 
 // 로그인
 export async function doLogin(studentID, password){
@@ -8,7 +9,7 @@ export async function doLogin(studentID, password){
     const payload = {studentID: studentID.trim(), password};
 
     // 로그인 요청
-    const res = await fetch('http://localhost:8081/api/auth/login', {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
@@ -41,9 +42,8 @@ export async function doLogin(studentID, password){
 
 // 회원가입
 export async function doSignup(body){
-    const res = await fetch('http://localhost:8081/api/auth/signup', {
+    const res = await fetchWithAuth(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(body)
     });
 
@@ -57,24 +57,14 @@ export async function doSignup(body){
 
 // 사용자 정보 로드, 토큰 없으면 loginPage로 리다이렉트
 export async function loadUserInfo(){
-    const accessToken = localStorage.getItem('Authorization');
-    const refreshToken = localStorage.getItem('rAuthorization');
+  const res = await fetchWithAuth(`${API_BASE_URL}/main/user_info`);
 
-    if (!accessToken){
-        throw new Error("로그인 필요");
+  if (!res.ok){
+    if (res.status === 401){
+      throw new Error("인증 오류, 로그인이 필요함");
     }
-
-    const res = await fetch('http://localhost:8081/api/main/user_info', {
-    method: 'GET',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization':  accessToken,
-      'rAuthorization': refreshToken
-    }
-  });
-
-  if (res.status === 401) {
-    throw new Error("인증 로유");
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || res.statusText);
   }
 
   const json = await res.json();
@@ -84,7 +74,7 @@ export async function loadUserInfo(){
 // 로그아웃
 export async function doLogout(){
   try{
-    await fetch("http://localhost:8081/api/auth/logout", {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
@@ -99,4 +89,33 @@ export async function doLogout(){
     localStorage.removeItem('rAuthorization');
   }
 
+}
+
+// 헤더에 토큰 두개 정보 담기
+// 토큰 만료 에러 시 다른 토큰을 통해 다시 접근 시도
+export async function fetchWithAuth(url, options = {}){  
+  const accessToken = localStorage.getItem('Authorization');
+  const refreshToken = localStorage.getItem('rAuthorization');
+
+  const headers = {
+    'Content-Type':   'application/json',
+    'Authorization':  accessToken,
+    'rAuthorization': refreshToken,
+    ...options.headers,
+  };
+  
+  const res = await fetch(url, {...options, headers});
+
+  const newAccessToken = res.headers.get('Authorization');
+  const newRefreshToken = res.headers.get('rAuthorization');
+
+  if (newAccessToken) setItem('Authorization', newAccessToken);
+  if (newRefreshToken) setItem('rAuthorization', newRefreshToken);
+
+  // _retry는 재시도 플래그
+  if (res.status === 401 && !options._retry){
+    return fetchWithAuth(url, {...options, _retry : true});
+  }
+
+  return res;
 }
