@@ -13,7 +13,7 @@ function LoginPage(){
     try{
       await doLogin(studentId, password);
       alert('로그인 성공');
-      navigate('/');
+      navigate('/main');
     } 
     catch(err){
       alert('로그인 실패: ' + err.message);
