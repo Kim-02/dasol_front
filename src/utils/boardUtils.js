@@ -1,6 +1,7 @@
 import { doLogout} from "./auth.js"
+import { fetchWithAuth } from "./auth.js";
 
-const API_BASE_URL = 'http://3.34.245.155/api/document';
+const API_BASE_URL_BOARD = 'http://3.34.245.155/api/document';
 
 export async function handleLogout(navigate){
     await doLogout();
@@ -15,13 +16,7 @@ export function toggleDropdown(setDropdownOpen){
 export async function loadPosts(setLoading, setPosts) {
     setLoading(true);
     try{
-        const res = await fetch(`${API_BASE_URL}/getAllPost`, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': localStorage.getItem('Authorization'),
-                'rAuthorization': localStorage.getItem('rAuthorization'),
-            },
-        });
+        const res = await fetchWithAuth(`${API_BASE_URL_BOARD}/getAllPost`);
         const body = await res.json();
         if (!res.ok) throw new Error(body.message || res.statusText);
         setPosts(body.result);
@@ -35,13 +30,7 @@ export async function loadPosts(setLoading, setPosts) {
 /* DocumentPost 조회 -> 게시판 클릭 시 함수 실행 */
 export async function handleView(postId, setViewPost, setEditMode, setShowModal){
     try {
-        const res = await fetch(`${API_BASE_URL}/posts/get/${postId}`,{
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': localStorage.getItem('Authorization'),
-                'rAuthorization': localStorage.getItem('rAuthorization'),
-            },
-        });
+        const res = await fetchWithAuth(`${API_BASE_URL_BOARD}/posts/get/${postId}`);
         const body = await res.json();
         if (!res.ok) throw new Error(body.message || res.statusText);
         setViewPost(body.result);
@@ -55,15 +44,10 @@ export async function handleView(postId, setViewPost, setEditMode, setShowModal)
 /* DocumentPost 수정 */
 export async function handleSave(viewPost, setShowModal, setViewPost, setLoading, setPosts){
     try{
-        const res = await fetch(`${API_BASE_URL}/posts/${viewPost.id}`, {
+        const res = await fetchWithAuth(`${API_BASE_URL_BOARD}/posts/${viewPost.id}`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': localStorage.getItem('Authorization'),
-                'rAuthorization': localStorage.getItem('rAuthorization'),
-        },
-        body: JSON.stringify(viewPost),
-    });
+            body: JSON.stringify(viewPost),
+        });
     const body = await res.json();
     if (!res.ok) throw new Error(body.message || res.statusText);
     alert('수정 완료');
@@ -102,19 +86,14 @@ export async function handleSubmit(e, navigate, createData){
         // studentId는 백엔드에서 SecurityGuardian으로 설정됩니다.
     };
     try {
-        const res = await fetch(`${API_BASE_URL}/create`, {
+        const res = await fetchWithAuth(`${API_BASE_URL_BOARD}/create`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': localStorage.getItem('Authorization'),
-                'rAuthorization': localStorage.getItem('rAuthorization')
-            },
             body: JSON.stringify(dto)
         });
         const result = await res.json();
         if (res.ok) {
             alert(`등록 성공: ${result.message}`);
-            navigate('/documentBoard');
+            navigate('/document_board');
         } else {
             alert(`등록 실패: ${result.message || res.statusText}`);
         }
