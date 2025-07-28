@@ -110,8 +110,8 @@ export async function fetchWithAuth(url, options = {}){
   const newAccessToken = res.headers.get('Authorization');
   const newRefreshToken = res.headers.get('rAuthorization');
 
-  if (newAccessToken) setItem('Authorization', newAccessToken);
-  if (newRefreshToken) setItem('rAuthorization', newRefreshToken);
+  if (newAccessToken) localStorage.setItem('Authorization', newAccessToken);
+  if (newRefreshToken) localStorage.setItem('rAuthorization', newRefreshToken);
 
   // _retry는 재시도 플래그
   if (res.status === 401 && !options._retry){
