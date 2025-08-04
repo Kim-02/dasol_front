@@ -1,0 +1,16 @@
+
+.posts-header, .post-row {
+    display: grid;
+    grid-template-columns: 2fr 120px 120px 100px;
+    align-items: center;
+    gap: 10px;
+}
+.post-row {
+    cursor: pointer;
+}
+.post-row:hover {
+    background: #f8f9fa;
+}
+.col-completed input {
+    pointer-events: none;
+}

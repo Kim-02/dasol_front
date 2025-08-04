@@ -1,0 +1,31 @@
+/* depart.css */
+
+/* 1) OrgChart 노드 기본: 흰 배경, 파란 테두리, 그림자 없애기 */
+#deptChart td.google-visualization-orgchart-node {
+  /* background 속성 전체를 덮어씌워서 gradient 등을 제거합니다 */
+  background: #fff !important;
+  background-image: none !important;
+
+  /* 테두리만 파란색으로 */
+  border: 2px solid #3498db !important;
+
+  /* 둥근 모서리 제거, 그림자 제거 */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+
+  /* 여유 패딩 */
+  padding: 6px 8px !important;
+}
+
+/* 2) OrgChart 연결 선을 검정으로 */
+#deptChart svg path[stroke],
+#deptChart svg line {
+  stroke: #000 !important;
+}
+
+/* 3) 선택된 노드: 연한 파란 채움 */
+#deptChart td.google-visualization-orgchart-node.selected {
+  /* background 전체를 덮어씌워야 inline gradient/색상이 사라집니다 */
+  background: #e6f2ff !important;
+  background-image: none !important;
+}
