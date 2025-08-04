@@ -6,6 +6,8 @@ import DocumentBoard from './pages/board/documentBoard';
 import DocumentCreate from './pages/board/documentCreate';
 import UserPage from './pages/user/user';
 import './App.css';
+import ApprovalProcess from './pages/approval/approvalProcess';
+import ApprovalRequest from './pages/approval/approvalRequest';
 
 
 function App() {
@@ -18,6 +20,8 @@ function App() {
         <Route path="/document_board" element={<DocumentBoard />} />
         <Route path="/document_create" element={<DocumentCreate />} />
         <Route path="/user" element={<UserPage />} />
+        <Route path="/approval_process" element={<ApprovalProcess />} />
+        <Route path="/approval_request" element={<ApprovalRequest />} />
       </Routes>
     </BrowserRouter>
   )
