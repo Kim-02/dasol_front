@@ -8,6 +8,7 @@ import UserPage from './pages/user/user';
 import './App.css';
 import ApprovalProcess from './pages/approval/approvalProcess';
 import ApprovalRequest from './pages/approval/approvalRequest';
+import MonthlySummary from './pages/approval/monthlySummary';
 
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/user" element={<UserPage />} />
         <Route path="/approval_process" element={<ApprovalProcess />} />
         <Route path="/approval_request" element={<ApprovalRequest />} />
+        <Route path="/monthly_summary" element={<MonthlySummary />} />
       </Routes>
     </BrowserRouter>
   )
