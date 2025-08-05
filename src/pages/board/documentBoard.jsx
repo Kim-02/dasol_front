@@ -7,7 +7,8 @@ import { handleLogout, toggleDropdown, loadPosts, handleView, handleSave, handle
 
 function DocumentBoard(){
     const [userInfo, setUserInfo] = useState("로딩 중...");
-    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [dropdownboard, setDropdownBoard] = useState(false);
+    const [dropdownApproval, setDropdownApproval] = useState(false);
     const [searchPosts, setSearchPosts] = useState("");
     const navigate = useNavigate();
 
@@ -44,17 +45,29 @@ function DocumentBoard(){
 
                 {/* 게시판 드롭다운 */}
                 <li className="dropdown">
-                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownOpen)}>게시판 <span className="arrow">
-                        {dropdownOpen ? "▲" : "▼"}</span>
+                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownBoard)}>게시판 <span className="arrow">
+                        {dropdownboard ? "▲" : "▼"}</span>
                     </div>
-                    {dropdownOpen && (
-                        <ul className={`dropdown-menu ${dropdownOpen ? 'show' : ''}`}>
+                    {dropdownboard && (
+                        <ul className={`dropdown-menu ${dropdownboard ? 'show' : ''}`}>
                             <li><Link to="/document_board">문서게시판</Link></li>
                             <li><Link to="/event_board">이벤트게시판</Link></li>
                             <li><Link to="/inquiry_board.html">문의게시판</Link></li>
                         </ul>
                     )}
                 </li>
+                <li className="dropdown">
+                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownApproval)}>결재<span className="arrow">
+                        {dropdownApproval ? "▲" : "▼"}</span>
+                    </div>
+                    {dropdownApproval && (
+                        <ul className={`dropdown-menu ${dropdownApproval ? 'show' : ''}`}>
+                            <li><Link to="/approval_request" className="sidebar-link">결재 신청</Link></li>
+                            <li><Link to="/approval_process" className="sidebar-link">결재 처리</Link></li>
+                        </ul>
+                    )}
+                </li>
+                <li><Link to="/monthly_summary" className="sidebar-link">월별 결산</Link></li>
                 <li><Link to="/" className="sidebar-link">설정</Link></li>
                 </ul>
             </nav>

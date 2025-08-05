@@ -6,7 +6,8 @@ import { handleLogout, toggleDropdown, handleInputChange, handleSubmit} from "..
 
 function DocumentCreate(){
     const [userInfo, setUserInfo] = useState("로딩 중...");
-    const [dropdownOpen, setDropdownOpen] = useState(false); 
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [dropdownOpenn, setDropdownOpenn] = useState(false);
     const navigate = useNavigate();
 
     const [createData, setCreateData] = useState({
@@ -53,6 +54,18 @@ function DocumentCreate(){
                     </ul>
                 )}
             </li>
+            <li className="dropdown">
+                <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownOpenn)}>결재<span className="arrow">
+                    {dropdownOpenn ? "▲" : "▼"}</span>
+                </div>
+                {dropdownOpenn && (
+                    <ul className={`dropdown-menu ${dropdownOpenn ? 'show' : ''}`}>
+                        <li><Link to="/approval_request" className="sidebar-link">결재 신청</Link></li>
+                        <li><Link to="/approval_process" className="sidebar-link">결재 처리</Link></li>
+                    </ul>
+                )}
+            </li>
+            <li><Link to="/monthly_summary" className="sidebar-link">월별 결산</Link></li>
             <li><Link to="/" className="sidebar-link">설정</Link></li>
             </ul>
         </nav>

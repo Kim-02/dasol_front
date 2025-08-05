@@ -1,16 +1,36 @@
-import React,{ useState, useRef } from "react";
+import React,{ useEffect, useState, useRef } from "react";
 import {PDFDocument} from 'pdf-lib';
-import { fetchWithAuth } from "../../utils/auth";
+import { loadUserInfo, fetchWithAuth } from "../../utils/auth";
+import { useNavigate, Link } from "react-router-dom";
+import { handleLogout, toggleDropdown } from "../../utils/boardUtils";
 
 const API_BASE_URL_APPROVAL = 'http://3.34.245.155/api/approval';
 
 function MonthlySummary(){
+    const [userInfo, setUserInfo] = useState("로딩 중...");
+    const [dropdownboard, setDropdownBoard] = useState(false);
+    const [dropdownApproval, setDropdownApproval] = useState(false);
+    const navigate = useNavigate();
+
     const [month, setMonth] = useState('');
     const [monthlyData, setMonthlyData] = useState([]);
     const [summaryHtml, setSummaryHtml] = useState('');
     const [pdfUrl, setPdtUrl] = useState('');
     const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
     const iframeRef = useRef(null);
+
+    useEffect(() => {
+        // 페이지 로드 시 정보 가져옴
+        loadUserInfo()
+        .then(result => {
+            if (!result) throw new Error("사용자 정보 없음");
+            setUserInfo(`${result.name || '이름 없음'} (${result.studentId || '학번 없음'})`);
+        })
+        .catch(err => {
+            alert("로그인이 필요함");
+            /* navigate('/'); */
+        });
+    }, []);
 
     const handleLoad = async () => {
         if(!month){
@@ -95,31 +115,78 @@ function MonthlySummary(){
     };
 
     return (
-        <section className="content">
-           <h1>월별 결산 추출</h1>
+        <div className="main-wrapper">
+            {/*사이드바*/}
+            <nav className="sidebar">
+                <ul>
+                <li><Link to="/main" className="sidebar-link">대시보드</Link></li>
 
-           {/* 1) 월 선택 */}
-           <div className="form-group">
-           <label htmlFor="monthPicker">월 선택</label>
-           <input type="month" id="monthPicker" value={month} onChange={e => setMonth(e.target.value)} />
-           <button className="btn-search" onClick={handleLoad}>불러오기</button>
-           </div>
+                {/* 게시판 드롭다운 */}
+                <li className="dropdown">
+                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownBoard)}>게시판 <span className="arrow">
+                        {dropdownboard ? "▲" : "▼"}</span>
+                    </div>
+                    {dropdownboard && (
+                        <ul className={`dropdown-menu ${dropdownboard ? 'show' : ''}`}>
+                            <li><Link to="/document_board">문서게시판</Link></li>
+                            <li><Link to="/event_board">이벤트게시판</Link></li>
+                            <li><Link to="/inquiry_board.html">문의게시판</Link></li>
+                        </ul>
+                    )}
+                </li>
+                <li className="dropdown">
+                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownApproval)}>결재<span className="arrow">
+                        {dropdownApproval ? "▲" : "▼"}</span>
+                    </div>
+                    {dropdownApproval && (
+                        <ul className={`dropdown-menu ${dropdownApproval ? 'show' : ''}`}>
+                            <li><Link to="/approval_request" className="sidebar-link">결재 신청</Link></li>
+                            <li><Link to="/approval_process" className="sidebar-link">결재 처리</Link></li>
+                        </ul>
+                    )}
+                </li>
+                <li><Link to="/monthly_summary" className="sidebar-link">월별 결산</Link></li>
+                <li><Link to="/" className="sidebar-link">설정</Link></li>
+                </ul>
+            </nav>
 
-           {/* 2) 요약 리스트 (옵션) */}
-           <ul id="summaryList" dangerouslySetInnerHTML={{__html: summaryHtml}}></ul>
+            {/* 메인 영역 */}
+            <div className="main">
+                {/* 헤더: 우측 상단 사용자 정보 */}
+                <header className="header">
+                {/* auth.js가 자동으로 이 요소를 채웁니다 */}
+                <div className="user-info" style={{cursor: "pointer"}} onClick={() => navigate("/user")}>
+                    {userInfo}
+                </div>
+                <button id="logoutBtn" className="logout-btn" onClick={() => handleLogout(navigate)}>로그아웃</button>
+                </header>
+                <section className="content">
+                <h1>월별 결산 추출</h1>
 
-           {/* 3) 미리보기 & 다운로드 */}
-           <div style={{marginTop: '1rem'}}>
-            <button className="btn-submit" onClick={handleGeneratePdf} disabled={monthlyData.length === 0}>PDF 미리보기 & 생성</button>
-            {pdfUrl && (
-                <button className="btn-create" onClick={handleDownload} style={{display: 'none'}} />
-            )}
-            
-           </div>
-           {pdfUrl && (
-            <iframe ref={iframeRef} title="PDF 미리보기" src={pdfUrl} style = {{width: '100%', height: '80vh', border: '1px solid #ccc', marginTop: '1rem'}}/>
-           )}
-        </section>
+                {/* 1) 월 선택 */}
+                <div className="form-group">
+                <label htmlFor="monthPicker">월 선택</label>
+                <input type="month" id="monthPicker" value={month} onChange={e => setMonth(e.target.value)} />
+                <button className="btn-search" onClick={handleLoad}>불러오기</button>
+                </div>
+
+                {/* 2) 요약 리스트 (옵션) */}
+                <ul id="summaryList" dangerouslySetInnerHTML={{__html: summaryHtml}}></ul>
+
+                {/* 3) 미리보기 & 다운로드 */}
+                <div style={{marginTop: '1rem'}}>
+                    <button className="btn-submit" onClick={handleGeneratePdf} disabled={monthlyData.length === 0}>PDF 미리보기 & 생성</button>
+                    {pdfUrl && (
+                        <button className="btn-create" onClick={handleDownload} style={{display: 'none'}} />
+                    )}
+                    
+                </div>
+                {pdfUrl && (
+                    <iframe ref={iframeRef} title="PDF 미리보기" src={pdfUrl} style = {{width: '100%', height: '80vh', border: '1px solid #ccc', marginTop: '1rem'}}/>
+                )}
+                </section>
+            </div>
+        </div>
     );
 }
 
