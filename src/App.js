@@ -9,6 +9,8 @@ import './App.css';
 import ApprovalProcess from './pages/approval/approvalProcess';
 import ApprovalRequest from './pages/approval/approvalRequest';
 import MonthlySummary from './pages/approval/monthlySummary';
+import EventBoard from './pages/board/eventBoard';
+import EventCreate from './pages/board/eventCreate';
 
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
         <Route path="/approval_process" element={<ApprovalProcess />} />
         <Route path="/approval_request" element={<ApprovalRequest />} />
         <Route path="/monthly_summary" element={<MonthlySummary />} />
+        <Route path="/event_board" element={<EventBoard />} />
+        <Route path="/event_create" element={<EventCreate />} />
       </Routes>
     </BrowserRouter>
   )
