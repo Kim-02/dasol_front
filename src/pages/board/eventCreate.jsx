@@ -10,6 +10,8 @@ function EventCreate(){
     const [dropdownboard, setDropdownBoard] = useState(false);
     const [dropdownApproval, setDropdownApproval] = useState(false);
     const navigate = useNavigate();
+    const [prizes, setPrizes] = useState([{ prizeId: '', prizeName: '', prizePrice: '' }]);
+    const [allowDupli, setAllowDupli] = useState(false);
 
     const [createData, setCreateData] = useState({
         title: '',
@@ -19,7 +21,8 @@ function EventCreate(){
         target: '',
         capacity: '',
         notice: true,
-        payAmount: ''
+        payAmount: '',
+        prizes: prizes
     });
 
     useEffect(() => {
@@ -35,7 +38,27 @@ function EventCreate(){
         });
 
     }, []);
+
+    const handlePrizeChange = (e, index) => {
+        const {name, value} = e.target;
+        setPrizes(prev => {
+            const updated = [...prev];
+            updated[index][name] = name === 'prizePrice' ? Number(value) : value;
+            return updated;
+        });
+    };
+
+    const addPrize = () => {
+        setPrizes(prev => [...prev, {prizeId: '', prizeName: '', prizePrice: ''}]);
+    };
+
+    const removePrize = (index) => {
+        setPrizes(prev => prev.filter((_, i) => i !== index));
+    };
     
+    const handleAllowDuplicateChange = (e) => {
+        setAllowDupli(e.target.checked);
+    }
 
   return (
     <div className="main-wrapper">
@@ -131,10 +154,34 @@ function EventCreate(){
             <input type="number" id="payAmount" name="payAmount" min="0" value={createData.payAmount} onChange={(e) => handleInputChange(e, setCreateData)}></input>
             </div>
 
+            <form>
+            <div className="form-group">
+                <label htmlFor="selectDuplicate">상품 중복 선택 허용</label>
+                <input type="checkbox" checked={allowDupli} onChange={handleAllowDuplicateChange} />
+            </div>
+
+            <div className="form-group">
+                <label>상품</label>
+
+                {prizes.map((prize, index) => (
+                    <div key={index} className="prize-row">
+                        <input type="text" name="prizeName" placeholder="상품명" value={prize.prizeName} onChange={(e) => handlePrizeChange(e, index)} />
+                        <input type="number" name="prizePrice" placeholder="가격" value={prize.prizePrice} onChange={(e) => handlePrizeChange(e, index)} />
+                        <input type="text" name="prizeId" placeholder="상품 고유 ID" value={prize.prizeId} onChange={(e) => handlePrizeChange(e, index)} />
+                        <button type="button" onClick={() => removePrize(index)}>-</button>
+                    </div>
+                    
+                ))}
+
+                <button type="button" onClick={addPrize}>+</button>
+            </div>
+
+
             <div className="form-actions">
             <button type="button" className="btn-cancel" onClick={() => navigate('/event_board')}>취소</button>
             <button type="submit" className="btn-submit">등록</button>
             </div>
+            </form>
         </form>
         </section>
   </div>
