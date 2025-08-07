@@ -18,9 +18,11 @@ function EventBoard(){
     const [viewEvent, setViewEvent] = useState(null);
     const [editMode, setEditMode] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [selectedPrizes, setSelectedPrizes] = useState([]);
+    const [allowDuplicate, setAllowDuplicate] = useState(false);
 
     const filteredEvents= events.filter(event => event.title.toLowerCase().includes(searchEvents.toLowerCase()) || event.content?.toLowerCase().includes(searchEvents.toLowerCase()));
-    
+
     useEffect(() => {
         // 페이지 로드 시 정보 가져옴
         loadUserInfo()
@@ -35,6 +37,18 @@ function EventBoard(){
 
         loadEvents(setLoading, setEvents);
     }, []);
+
+    const handlePrizeSelect = (prize) => {
+        if (allowDuplicate){
+            if(selectedPrizes.some(sp => sp.id === prize.id)){
+                setSelectedPrizes(prev => prev.filter(selectedPrizes => selectedPrizes.id !== prize.id));
+            } else {
+                setSelectedPrizes(prev => [...prev, prize]);
+            }
+        } else {
+            setSelectedPrizes([prize]);
+        }
+    }
     
 
     return(
@@ -147,6 +161,20 @@ function EventBoard(){
                                     <p><strong>시작일시:</strong> {new Date(viewEvent.startDate).toLocaleString()}</p>
                                     <p><strong>종료일시:</strong> {new Date(viewEvent.endDate).toLocaleString()}</p>
                                     <p><strong>참가비:</strong> {viewEvent.payAmount}</p>
+
+                                    <p><strong>상품 목록:</strong></p>
+                                        {Array.isArray(viewEvent.eventItem) && viewEvent.eventItem.length > 0 ? (
+                                            <ul>
+                                            {viewEvent.eventItem.map(prize => (
+                                                <li key={prize.id}>
+                                                    <input type="checkbox" id={`prize-${prize.id}`} checked={selectedPrizes.some(selectedPrizes => selectedPrizes.id === prize.id)} onChange={() => handlePrizeSelect(prize)} />
+                                                    <label htmlFor={`prize-${prize.id}`}>{prize.prizeName} - {prize.prizePrice}원</label>
+                                                </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p>상품 없음</p>
+                                        )}
 
                                     <div className="modal-footer">
                                         <button className="btn-edit" onClick={() => setEditMode(true)}>수정</button>
