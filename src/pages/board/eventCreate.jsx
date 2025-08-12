@@ -22,7 +22,6 @@ function EventCreate(){
         capacity: '',
         notice: true,
         payAmount: '',
-        prizes: prizes
     });
 
     useEffect(() => {
@@ -43,7 +42,7 @@ function EventCreate(){
         const {name, value} = e.target;
         setPrizes(prev => {
             const updated = [...prev];
-            updated[index][name] = name === 'prizePrice' ? Number(value) : value;
+            updated[index][name] = value;
             return updated;
         });
     };
@@ -113,7 +112,7 @@ function EventCreate(){
             <button className="btn-create" onClick={() => navigate('/event_board')}>목록으로</button>
         </div>
 
-        <form id="createPostForm" className="form-container" onSubmit={(e) => handleSubmit(e, navigate, createData)}>
+        <form id="createPostForm" className="form-container" onSubmit={(e) => handleSubmit(e, navigate, {...createData, allowDuplicate: allowDupli, prizes})}>
             <div className="form-group">
             <label htmlFor="title">제목</label>
             <input type="text" id="title" name="title" value={createData.title} onChange={(e) => handleInputChange(e, setCreateData)} required></input>
@@ -154,10 +153,10 @@ function EventCreate(){
             <input type="number" id="payAmount" name="payAmount" min="0" value={createData.payAmount} onChange={(e) => handleInputChange(e, setCreateData)}></input>
             </div>
 
-            <form>
+            <div>
             <div className="form-group">
                 <label htmlFor="selectDuplicate">상품 중복 선택 허용</label>
-                <input type="checkbox" checked={allowDupli} onChange={handleAllowDuplicateChange} />
+                <input type="checkbox" id="selectDuplicate" checked={allowDupli} onChange={handleAllowDuplicateChange} />
             </div>
 
             <div className="form-group">
@@ -181,7 +180,7 @@ function EventCreate(){
             <button type="button" className="btn-cancel" onClick={() => navigate('/event_board')}>취소</button>
             <button type="submit" className="btn-submit">등록</button>
             </div>
-            </form>
+            </div>
         </form>
         </section>
   </div>
