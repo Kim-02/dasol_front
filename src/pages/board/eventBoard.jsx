@@ -1,10 +1,11 @@
 import React,{ useState, useEffect } from "react";
 import './documentBoard.css'
-import { loadUserInfo } from "../../utils/auth";
+import { loadUserInfo, fetchWithAuth } from "../../utils/auth";
 import { useNavigate, Link} from "react-router-dom";
 import { handleLogout, toggleDropdown, handleInputChange, cancelEdit} from "../../utils/boardUtils";
 import { loadEvents, handleView, handleSave } from "../../utils/eventUtils";
 
+const API_BASE_URL_EVENT = 'http://3.34.245.155/api/event_post';
 
 function EventBoard(){
     const [userInfo, setUserInfo] = useState("로딩 중...");
@@ -19,15 +20,26 @@ function EventBoard(){
     const [editMode, setEditMode] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [selectedPrizes, setSelectedPrizes] = useState([]);
-    const [allowDuplicate, setAllowDuplicate] = useState(false);
 
-    const filteredEvents= events.filter(event => event.title.toLowerCase().includes(searchEvents.toLowerCase()) || event.content?.toLowerCase().includes(searchEvents.toLowerCase()));
+    const [user, setUser] = useState(null);
+    const [isAuthor, setIsAuthor] = useState(false);
+    const [hasApplied, setHasApplied] = useState(false);
+
+    const openEvent = (id) => {
+        setSelectedPrizes([]);
+        setHasApplied(false);
+        setEditMode(false);
+        handleView(id, setViewEvent, setEditMode, setShowModal);
+    };
+
+    const filteredEvents= events.filter(event => (event.title || '').toLowerCase().includes(searchEvents.toLowerCase()) || (event.content || '').toLowerCase().includes(searchEvents.toLowerCase()));
 
     useEffect(() => {
         // 페이지 로드 시 정보 가져옴
         loadUserInfo()
         .then(result => {
             if (!result) throw new Error("사용자 정보 없음");
+            setUser(result);
             setUserInfo(`${result.name || '이름 없음'} (${result.studentId || '학번 없음'})`);
         })
         .catch(err => {
@@ -38,18 +50,91 @@ function EventBoard(){
         loadEvents(setLoading, setEvents);
     }, []);
 
-    const handlePrizeSelect = (prize) => {
-        if (allowDuplicate){
-            if(selectedPrizes.some(sp => sp.id === prize.id)){
-                setSelectedPrizes(prev => prev.filter(selectedPrizes => selectedPrizes.id !== prize.id));
-            } else {
-                setSelectedPrizes(prev => [...prev, prize]);
+    useEffect(() => {
+        if(!showModal || !viewEvent || !user) return;
+
+        /* 게시글 작성자 확인 */
+        const author = (viewEvent.memberId && user.memberId && viewEvent.memberId === user.memberId) || 
+        (viewEvent.memberName && user.name && viewEvent.memberName === user.name);
+        setIsAuthor(!!author);
+
+        /* 해당 이벤트 신청 상태 조회 */
+        (async () => {
+            try {
+                const res = await fetchWithAuth(`신청 API 주소`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                setHasApplied(!!(data.result?.applied ?? data.applied));
+            } catch {
+                setHasApplied(false);
             }
-        } else {
-            setSelectedPrizes([prize]);
+        })();
+    }, [showModal, viewEvent, user]);
+
+    const handlePrizeSelect = (prize) => {
+        const allowMulti = !!(viewEvent?.allowDupli ?? viewEvent?.allowDuplicate);
+        setSelectedPrizes(prev => {
+            const exists = prev.some(p => (p.id ?? p.prizeName) === (prize.id ?? prize.prizeName));
+            if (allowMulti){
+                return exists ? prev.filter(p => (p.id ?? p.prizeName) !== (prize.id ?? prize.prizeName)) : [...prev, prize];
+            } else {
+                return exists ? [] : [prize];
+            }
+        });
+    };
+
+    const handleApply = async () => {
+        if (!viewEvent) return;
+        if (!selectedPrizes.length) {alert('선택한 상품이 없음'); return;}
+        const postId = viewEvent.postId ?? viewEvent.id;
+        const itemIds = selectedPrizes.map(x => x.id).filter(id => id != null);
+        if (itemIds.length === 0) {alert('선택한 상품에 id가 없습니다.'); return;}
+        try {
+            const res = await fetchWithAuth(`${API_BASE_URL_EVENT}/posts/participate`, {
+                method: 'POST',
+                body: JSON.stringify(postId, itemIds) ,
+            });
+            if (!res.ok) throw new Error();
+            setHasApplied(true);
+            alert('신청이 완료되었습니다.');
+        } catch {
+            alert('신청에 실패했습니다.')
         }
-    }
-    
+    };
+
+    const handleCancelApply = async () => {
+        if(!viewEvent) return;
+        const postId = viewEvent.postId ?? viewEvent.id;
+        try {
+            const res = await fetchWithAuth(`http://3.34.245.155/api/user/event/leave/${postId}`, {
+                method: 'POST',
+            });
+            if(!res.ok) throw new Error();
+            setHasApplied(false);
+            setSelectedPrizes([]);
+            alert('신청이 취소되었습니다.');
+        } catch {
+            alert('실패했습니다. 그냥 참여하세요.');
+        }
+    };
+
+    const handleDelete = async () => {
+        if(!viewEvent) return;
+        const postId = viewEvent.postId ?? viewEvent.id;
+        if (!confirm('정말 삭제하시겠습니가?')) return;
+        try {
+            const res = await fetchWithAuth(`${API_BASE_URL_EVENT}/delete?post_id=${postId}`, {
+                method: 'DELETE'
+            });
+            if(!res.ok) throw new Error();
+            setShowModal(false);
+            setViewEvent(null);
+            loadEvents(setLoading, setEvents);
+            alert('삭제되었습니다.');
+        } catch {
+            alert('삭제 실패했습니다.');
+        }
+    };
 
     return(
         <div className="main-wrapper">
@@ -129,7 +214,7 @@ function EventBoard(){
                         {filteredEvents.length === 0 ? (
                             <div className="no-data">등록된 이벤트가 없습니다.</div>
                         ) : filteredEvents.map(event => (
-                            <div className="post-row" key={event.id} onClick={() => handleView(event.id, setViewEvent, setEditMode, setShowModal)}>
+                            <div className="post-row" key={event.postId} onClick={() => openEvent(event.postId)}>
                                 <div className="col-title">{event.title}</div>
                                 <div className="col-author">{event.memberName}</div>
                                 <div className="col-capacity">{event.capacity}</div>
@@ -166,9 +251,9 @@ function EventBoard(){
                                         {Array.isArray(viewEvent.eventItem) && viewEvent.eventItem.length > 0 ? (
                                             <ul>
                                             {viewEvent.eventItem.map(prize => (
-                                                <li key={prize.id}>
-                                                    <input type="checkbox" id={`prize-${prize.id}`} checked={selectedPrizes.some(selectedPrizes => selectedPrizes.id === prize.id)} onChange={() => handlePrizeSelect(prize)} />
-                                                    <label htmlFor={`prize-${prize.id}`}>{prize.prizeName} - {prize.prizePrice}원</label>
+                                                <li key={prize.id ?? prize.prizeName}>
+                                                    <input type="checkbox" id={`prize-${prize.id ?? prize.prizeName}`} checked={selectedPrizes.some(sp => (sp.id ?? sp.prizeName) === (prize.id ?? prize.prizeName))} onChange={() => handlePrizeSelect(prize)} />
+                                                    <label htmlFor={`prize-${prize.id ?? prize.prizeName}`}>{prize.prizeName} - {prize.prizePrice}원</label>
                                                 </li>
                                                 ))}
                                             </ul>
@@ -177,7 +262,17 @@ function EventBoard(){
                                         )}
 
                                     <div className="modal-footer">
-                                        <button className="btn-edit" onClick={() => setEditMode(true)}>수정</button>
+                                        {isAuthor ? (
+                                            <>
+                                            <button className="btn-edit" onClick={() => setEditMode(true)}>수정</button>
+                                            <button className="btn-delete" onClick={handleDelete}>삭제</button>
+                                            </>
+                                        ) : (
+                                            <>
+                                            <button className="btn-apply" onClick={handleApply} disabled={hasApplied}>신청하기</button>
+                                            <button className="btn-cancel" onClick={handleCancelApply} disabled={!hasApplied}>취소하기</button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
