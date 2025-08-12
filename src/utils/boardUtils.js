@@ -3,6 +3,7 @@ import { fetchWithAuth } from "./auth.js";
 
 const API_BASE_URL_BOARD = 'http://3.34.245.155/api/document';
 
+/* 공용 함수 */
 export async function handleLogout(navigate){
     await doLogout();
     navigate("/");
@@ -12,6 +13,7 @@ export function toggleDropdown(setDropdownOpen){
     setDropdownOpen(prev => !prev);
 }
 
+/* 일반적인 게시판 */
 /* 게시판 불러오기 */
 export async function loadPosts(setLoading, setPosts) {
     setLoading(true);
