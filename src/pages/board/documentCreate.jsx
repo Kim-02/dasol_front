@@ -6,8 +6,8 @@ import { handleLogout, toggleDropdown, handleInputChange, handleSubmit} from "..
 
 function DocumentCreate(){
     const [userInfo, setUserInfo] = useState("로딩 중...");
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [dropdownOpenn, setDropdownOpenn] = useState(false);
+    const [dropdownboard, setDropdownBoard] = useState(false);
+    const [dropdownApproval, setDropdownApproval] = useState(false);
     const navigate = useNavigate();
 
     const [createData, setCreateData] = useState({
@@ -43,11 +43,11 @@ function DocumentCreate(){
             <li><Link to="/main" className="sidebar-link">대시보드</Link></li>
             {/* 게시판 드롭다운 */}
             <li className="dropdown">
-                <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownOpen)}>게시판 <span className="arrow">
-                    {dropdownOpen ? "▲" : "▼"}</span>
+                <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownBoard)}>게시판 <span className="arrow">
+                    {dropdownboard ? "▲" : "▼"}</span>
                 </div>
-                {dropdownOpen && (
-                    <ul className={`dropdown-menu ${dropdownOpen ? 'show' : ''}`}>
+                {dropdownboard && (
+                    <ul className={`dropdown-menu ${dropdownboard ? 'show' : ''}`}>
                         <li><Link to="/document_board">문서게시판</Link></li>
                         <li><Link to="/event_board">이벤트게시판</Link></li>
                         <li><Link to="/inquiry_board.html">문의게시판</Link></li>
@@ -55,11 +55,11 @@ function DocumentCreate(){
                 )}
             </li>
             <li className="dropdown">
-                <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownOpenn)}>결재<span className="arrow">
-                    {dropdownOpenn ? "▲" : "▼"}</span>
+                <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownApproval)}>결재<span className="arrow">
+                    {dropdownApproval ? "▲" : "▼"}</span>
                 </div>
-                {dropdownOpenn && (
-                    <ul className={`dropdown-menu ${dropdownOpenn ? 'show' : ''}`}>
+                {dropdownApproval && (
+                    <ul className={`dropdown-menu ${dropdownApproval ? 'show' : ''}`}>
                         <li><Link to="/approval_request" className="sidebar-link">결재 신청</Link></li>
                         <li><Link to="/approval_process" className="sidebar-link">결재 처리</Link></li>
                     </ul>
