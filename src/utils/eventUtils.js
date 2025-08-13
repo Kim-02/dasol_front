@@ -36,7 +36,7 @@ export async function handleView(postId, setViewEvent, setEditMode, setShowModal
 /* Event 수정 */
 export async function handleSave(viewEvent, setShowModal, setViewEvent, setLoading, setEvents){
     try{
-        const res = await fetchWithAuth(`${API_BASE_URL_EVENT}/posts/${viewEvent.id}`, {
+        const res = await fetchWithAuth(`${API_BASE_URL_EVENT}/posts/${viewEvent.postId ?? viewEvent.id}`, {
             method: 'PATCH',
             body: JSON.stringify(viewEvent),
         });
@@ -57,15 +57,15 @@ export async function handleSubmit(e, navigate, createData){
     const toNum = (v, fb=null) => v === '' || v == null ? fb : Number(v);
 
     /* 상품 정규화 및 필수값 보장 */
-    const normalPrizes = (createData.prizes || [])
-    .map(p => ({
-        prizeId : String(p.prizeId || '').trim(),
-        prizeName : (p.prizeName || '').trim(),
-        prizePrice: toNum(p.prizePrice, 0),
-    })).filter(p => p.prizeId && p.prizeName);
+    const items = (createData.items || [])
+    .map(i => ({
+        itemId : String(i.itemId || '').trim(),
+        itemName : (i.itemName || '').trim(),
+        itemCost: toNum(i.itemCost, 0),
+    })).filter(i => i.itemId && i.itemName);
 
     /* 중복된 고유번호 확인 */
-    const ids = normalPrizes.map(p => p.prizeId);
+    const ids = items.map(i => i.itemId);
     const dupId = ids.find((id, i) => ids.indexOf(id) !== i);
     if(dupId){
         alert(`중복된 고유 ID입니다: ${dupId}`);
@@ -73,7 +73,7 @@ export async function handleSubmit(e, navigate, createData){
     }
 
     /* 상품의 가격 유효성 확인 */
-    if (normalPrizes.some(p => p.prizePrice == null || p.prizePrice < 0)) {
+    if (items.some(i => i.itemCost == null || i.itemCost < 0)) {
         alert('상품 가격을 확인하세요(0 이상의 숫자)');
         return;
     }
@@ -90,7 +90,7 @@ export async function handleSubmit(e, navigate, createData){
         // studentId는 백엔드에서 SecurityGuardian으로 설정됩니다.
 
         allowDuplicate: !!(createData.allowDuplicate ?? createData.allowDupli),
-        prizes: normalPrizes,
+        items,
     };
     try {
         const res = await fetchWithAuth(`${API_BASE_URL_EVENT}/create`, {
