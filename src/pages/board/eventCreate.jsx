@@ -10,7 +10,7 @@ function EventCreate(){
     const [dropdownboard, setDropdownBoard] = useState(false);
     const [dropdownApproval, setDropdownApproval] = useState(false);
     const navigate = useNavigate();
-    const [prizes, setPrizes] = useState([{ prizeId: '', prizeName: '', prizePrice: '' }]);
+    const [items, setItems] = useState([{ itemId: '', itemName: '', itemCost: '' }]);
     const [allowDupli, setAllowDupli] = useState(false);
 
     const [createData, setCreateData] = useState({
@@ -40,19 +40,19 @@ function EventCreate(){
 
     const handlePrizeChange = (e, index) => {
         const {name, value} = e.target;
-        setPrizes(prev => {
+        setItems(prev => {
             const updated = [...prev];
             updated[index][name] = value;
             return updated;
         });
     };
 
-    const addPrize = () => {
-        setPrizes(prev => [...prev, {prizeId: '', prizeName: '', prizePrice: ''}]);
+    const addItem = () => {
+        setItems(prev => [...prev, {itemId: '', itemName: '', itemCost: ''}]);
     };
 
-    const removePrize = (index) => {
-        setPrizes(prev => prev.filter((_, i) => i !== index));
+    const removeItem = (index) => {
+        setItems(prev => prev.filter((_, i) => i !== index));
     };
     
     const handleAllowDuplicateChange = (e) => {
@@ -112,7 +112,7 @@ function EventCreate(){
             <button className="btn-create" onClick={() => navigate('/event_board')}>목록으로</button>
         </div>
 
-        <form id="createPostForm" className="form-container" onSubmit={(e) => handleSubmit(e, navigate, {...createData, allowDuplicate: allowDupli, prizes})}>
+        <form id="createPostForm" className="form-container" onSubmit={(e) => handleSubmit(e, navigate, {...createData, allowDuplicate: allowDupli, items})}>
             <div className="form-group">
             <label htmlFor="title">제목</label>
             <input type="text" id="title" name="title" value={createData.title} onChange={(e) => handleInputChange(e, setCreateData)} required></input>
@@ -162,17 +162,17 @@ function EventCreate(){
             <div className="form-group">
                 <label>상품</label>
 
-                {prizes.map((prize, index) => (
+                {items.map((item, index) => (
                     <div key={index} className="prize-row">
-                        <input type="text" name="prizeName" placeholder="상품명" value={prize.prizeName} onChange={(e) => handlePrizeChange(e, index)} />
-                        <input type="number" name="prizePrice" placeholder="가격" value={prize.prizePrice} onChange={(e) => handlePrizeChange(e, index)} />
-                        <input type="text" name="prizeId" placeholder="상품 고유 ID" value={prize.prizeId} onChange={(e) => handlePrizeChange(e, index)} />
-                        <button type="button" onClick={() => removePrize(index)}>-</button>
+                        <input type="text" name="itemName" placeholder="상품명" value={item.itemName} onChange={(e) => handlePrizeChange(e, index)} />
+                        <input type="number" name="itemCost" placeholder="가격" value={item.itemCost} onChange={(e) => handlePrizeChange(e, index)} />
+                        <input type="text" name="itemId" placeholder="상품 고유 ID" value={item.itemId} onChange={(e) => handlePrizeChange(e, index)} />
+                        <button type="button" onClick={() => removeItem(index)}>-</button>
                     </div>
                     
                 ))}
 
-                <button type="button" onClick={addPrize}>+</button>
+                <button type="button" onClick={addItem}>+</button>
             </div>
 
 
