@@ -1,0 +1,247 @@
+import React, {useCallback, useEffect, useMemo, useState} from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
+import "./monthly.css";
+
+const API_BASE_URL_MON = 'http://3.34.245.155/api';
+
+/* 헬퍼 */
+const yyyymm = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+const yymm = (d) => `${String(d.getFullYear()).slice(-2)}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+const yymmddDots = (s) => {
+    const d = new Date(s);
+    return `${String(d.getFullYear()).slice(-2)}.${String(d.getMonth()+1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const money = (n) => Number(n || 0).toLocaleString("ko-KR");
+
+const detectMine = (b64) => {
+    const s = (b64 || "").slice(0, 16);
+    if (s.startsWith("/9j")) return "image/jpeg";
+    if (s.startsWith("iVBOR")) return "image/png";
+    if (s.startsWith("R0lGOD")) return "image/gif";
+    return "image/*";
+}
+
+const toSrc = (raw) => {
+    if (!raw) return null;
+    const t = String(raw).trim();
+    if (t.startsWith("data:")) return t;
+    const b = t.replace(/\s+/g, "");
+    return `data:${detectMine(b)};base64,${b}`;
+}
+
+function CoverPage({ym}){
+    return(
+        <section className="page">
+            <div className="cover">
+                <div>
+                    <h1>월별 결산</h1>
+                    <div className="m">{ym.replace("-", "년 ")}월</div>
+                    <p className="subtitle">컴퓨터공학부 종합관리시스템</p>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function Col({req, seq}){
+    if(!req) return <div className="col" />
+
+    const no = `${yymm(new Date(req.requestDate))}-${String(seq).padStart(2, "0")}`;
+    const dt = yymmddDots(req.requestDate);
+
+    return (
+        <div className="col">
+            <div className="hx">
+                <div className="dots">{no}</div>
+                <div className="dots">{dt}</div>
+            </div>
+            <div className="row">
+                <span className="lbl">건명 :</span>
+                {req.title || "-"}
+            </div>
+            <div className="receiptWrap">
+                {req.receiptFile ? (
+                    <img className="receipt" alt="receipt" src={toSrc(req.receiptFile)} />
+                ) : null}
+            </div>
+            <div className="mini">
+                <div className="cell">
+                    <span className="lbl">예산 코드</span>
+                    {req.approvalCode || "-"}
+                </div>
+                <div className="cell">
+                    <span className="lbl">금액</span>
+                    {money(req.requestedAmount)} 원
+                </div>
+            </div>
+            <div className="foot">
+                <div className="cell">확인</div>
+                <div className="cell">결재</div>
+            </div>
+        </div>
+    );
+}
+
+function ContentPage({pair, startIndex}){
+    return (
+        <section className="page">
+            <div className="sheet">
+                <div className="two">
+                    <Col req={pair[0]} seq={startIndex + 1} />
+                    <Col req={pair[1]} seq={startIndex + 2} />
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function MonthPage(){
+    const navigate = useNavigate();
+    
+    const [user, setUser] = useState(null);
+    const [month, setMonth] = useState(yyyymm(new Date()));
+
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [fetching, setFetching] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        (async () => {
+            try{
+                const i = await loadUserInfo();
+                setUser(i);
+            } catch (e) {
+                console.error(e);
+                /* navigate("/"); */
+            }
+        })();
+    }, [navigate]);
+
+    /* 달이 바뀔 때마다 결산 요청 */
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try{
+                setError("");
+                setFetching(true);
+                /* 추후 실제 경로에 따라 변경 필요함 */
+                const url = `${API_BASE_URL_MON}/monthly?ym=${encodeURIComponent(month)}`;
+
+                const res = await fetchWithAuth(url, {
+                    method: "GET",
+                });
+
+                if(!res.ok){
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || res.statusText);
+                }
+
+                const json = await res.json();
+                /* response에 맞춰서 파싱 */
+                const arr = json?.result?.approvalRequests || json?.approvalRequests || json?.result || [];
+                if(alive) setRequests(arr);
+            } catch (e) {
+                if (alive) setError(e.message || "데이터 로드 실패");
+            } finally {
+                if (alive){
+                    setLoading(false);
+                    setFetching(false);
+                }
+            }
+        })();
+
+        return () => {
+            alive = false;
+        };
+    }, [month]);
+
+    const onPrint = useCallback(() => window.print(), []);
+
+    const onLogout = useCallback(async () => {
+        await doLogout();
+        navigate("/");
+    }, [navigate]);
+
+    /* 선택 달의 데이터 정렬 후 쌍으로 묶기 */
+    const pairs = useMemo(() => {
+        const inMonth = (requests || []).filter((r) => yyyymm(new Date(r.requestDate)) === month).sort((a, b) => new Date(a.requestDate) - new Date(b.requestDate))
+        const out = [];
+        for (let i = 0; i < inMonth.length; i+=2){
+            out.push([inMonth[i], inMonth[i+1] || null]);
+        }
+        return out;
+    }, [requests, month]);
+
+    return(
+        <div className="wrap">
+            <aside className="sidebar">
+                <div className="brand">컴퓨터공학부 종합관리시스템</div>
+                <div className="section-title">메뉴</div>
+                <nav className="nav">
+                    <Link to="/userpg">마이페이지</Link>
+                    <Link to="/">문서 게시판</Link>
+                    <Link to="/">이벤트 게시판</Link>
+                    <Link to="/approval_req">결재 신청</Link>
+                    <Link to="/approval_approved">결재</Link>
+                    <Link to="/approval_skeleton">결재-스켈레톤</Link>
+                    <Link to="/monthly_page" className="active">월별 결산</Link>
+                    <Link to="/">설정</Link>
+                    <Link to="/permission">권한변경</Link>              
+                </nav>
+            </aside>
+
+            <main className="main">
+                <header className="header">
+                <div>로그인: <b>{user ? `${user.name ?? "-"} (${user.studentId ?? "-"})` : "-"}</b></div>
+                <button className="logout" onClick={onLogout}>로그아웃</button>
+                </header>
+
+                <div className="content">
+                <div className="toolbar">
+                    <label>월 선택{" "}<input className="input" type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="월 선택" /></label>
+                    <button className="btn" onClick={onPrint} disabled={loading}>PDF로 저장</button>
+                    <span className="subtitle">표지 1장 + 본문 A4 세로, 좌·우 2건</span>
+                    {fetching ? (
+                        <span className="subtitle" aria-live="polite">
+                            &nbsp;로딩 중...
+                        </span>
+                    ) : null}
+                    {error ? (
+                        <span className="subtitle" style={{color: "#dc2626"}}>
+                            &nbsp;{error}
+                        </span>
+                    ): null}
+                </div>
+
+                <div className="print">
+                    {/* 표지 */}
+                    <CoverPage ym={month} />
+                    {/* 본문 */}
+                    {pairs.length === 0 ? (
+                        <section className="page">
+                            <div className="cover">
+                                <div>
+                                    <h1>월별 결산</h1>
+                                    <div className="m">{month.replace("-", "년 ")}월</div>
+                                    <p className="subtitle">해당 월 데이터가 없스빈다.</p>
+                                </div>
+                            </div>
+                        </section>
+                    ) : (
+                        pairs.map((pair, i) => (
+                            <ContentPage key={`pg-${i}`} pair={pair} startIndex={i*2} />
+                        ))
+                    )}
+                </div>
+                </div>
+            </main>
+            </div>
+    );
+}
+
+export default MonthPage;
