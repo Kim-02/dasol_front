@@ -18,6 +18,8 @@ import ApprovalRequestPage from './pages/approval/approvalRequestPage';
 import MonthPage from './pages/approval/monthPage';
 import PermissionPage from './pages/approval/permission';
 import UserPg from './pages/user/userpg';
+import Signup from './pages/signup/signup';
+import Login from './pages/login/login';
 
 
 function App() {
@@ -43,6 +45,8 @@ function App() {
         <Route path="/monthly_page" element={<MonthPage />} />
         <Route path="/permission" element={<PermissionPage />} />
         <Route path="/userpg" element={<UserPg />} />
+        <Route path="/signuppage" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
   )
