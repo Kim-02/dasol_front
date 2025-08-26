@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
-import "./approvalPage.css";
+import styles from "./approvalPage.module.css";
 
 /* 퍼킹 유틸함수 */
 const fmt = (dt) => {
@@ -10,7 +10,7 @@ const fmt = (dt) => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 const money = (n) => Number(n || 0).toLocaleString("ko-KR");
-const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, (m) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, (m) => ({"&":"&amp;","<":"&lt;","&gt;":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const detectMine = (b64) => {
     const s = (b64 || "").slice(0, 16);
     if (s.startsWith("/9j")) return "image/jpeg";
@@ -30,7 +30,7 @@ function ApprovalApproved(){
     const navigate = useNavigate();
 
     /* 로그인 유저 정보 */
-    const [currentUser, setCurrentUer] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
 
     /* 리스트 상태 */
     const [api, setApi] = useState({ status: 200, message: null, result: [] });
@@ -45,7 +45,7 @@ function ApprovalApproved(){
         (async () => {
             try{
                 const i = await loadUserInfo();
-                setCurrentUer(i);
+                setCurrentUser(i);
             } catch (e) {
                 console.error(e);
                 /* navigate("/"); */
@@ -86,8 +86,7 @@ function ApprovalApproved(){
             return [approversText, r.memberName, r.title, r.approvalCode].join(" ").toLowerCase().includes(q);
         });
     }, [api, query]);
-
-    const renderPlaceholder = useCallback(() => setShowSkeleton(true), []);
+    
     /* 테이블 행 클릭하면 드로어 오픈 */
     const openDrawer = useCallback((item) => setDrawerData(item), []);
     const closeDrawer = useCallback(() => setDrawerData(null), []);
@@ -116,7 +115,7 @@ function ApprovalApproved(){
 
         try {
             /* 나중에 API 맞춰서 변경 */
-            const res = await fetchWithAuth(`대충 링크`, {
+            const res = await fetchWithAuth(`http://localhost:8080/api/approval/postAccept`, {
                 method: "POST",
                 body: JSON.stringify({requestId: r.requestId})
             });
@@ -144,28 +143,6 @@ function ApprovalApproved(){
         }
     }, [drawerData, currentUser, showToast]);
 
-    /* 뻐킹 샘플 */
-    const Demo = useCallback(() => {
-        const sex = [{
-            approvers: [{ id: 5, studentId: "2021136024", name: "김승환"}],
-            approvalRequests: {
-                requestId: 101,
-                memberName: "김성제",
-                requestDate: new Date().toISOString(),
-                title: "졸업작품",
-                requestedAmount: 1000,
-                accountNumber: "111-222-333333",
-                payerName: "Muhammad tariq mahmood",
-                requestDetail: "데스노트",
-                approvalCode: "230 업무추진비",
-                isCompleted: false,
-                approvalDate: null,
-            },
-        }];
-        setApi({status: 200, message: null, result: sex});
-        setShowSkeleton(false);
-    }, []);
-
     const approveState = useMemo(() => {
         const r = drawerData?.approvalRequests || {};
         const canApprove = !!currentUser && (drawerData?.approvers || []).some(
@@ -175,45 +152,42 @@ function ApprovalApproved(){
             disabled: !canApprove || r.isCompleted === true,
             label: r.isCompleted === true ? "승인 완료" : "결재 승인",
             title: !canApprove ? "결재 대상이 아님." : "",
-            badgeHtml: r.isCompleted === true ? '<span className="badge ok">완료</span>' : '<span className="badge no">미완료</span>',
+            badgeHtml: r.isCompleted === true ? `<span class="${styles.badge} ${styles.ok}">완료</span>` : `<span class="${styles.badge} ${styles.no}">미완료</span>`,
         };
     }, [drawerData, currentUser]);
 
     return (
-        <div className="wrap">
-            <aside className="sidebar">
-                <div className="brand">컴퓨터공학부 종합관리시스템</div>
-                <div className="section-title">메뉴</div>
-                <nav className="nav">
+        <div className={styles.wrap}>
+            <aside className={styles.sidebar}>
+                <div className={styles.brand}>컴퓨터공학부 종합관리시스템</div>
+                <div className={styles.sectionTitle}>메뉴</div>
+                <nav className={styles.nav}>
                 <Link to="/userpg">마이페이지</Link>
                 <Link to="/">문서 게시판</Link>
                 <Link to="/">이벤트 게시판</Link>
                 <Link to="/approval_req">결재 신청</Link>
-                <Link to="/approval_approved" className="active">결재</Link>
-                <Link to="/approval_skeleton">결재-스켈레톤</Link>
+                <Link to="/approval_approved" className={styles.active}>결재</Link>
                 <Link to="/monthly_page">월별 결산</Link>
                 <Link to="/">설정</Link>
                 <Link to="/permission">권한변경</Link>
                 </nav>
             </aside>
 
-            <main className="main">
-                <header className="header">
+            <main className={styles.main}>
+                <header className={styles.header}>
                 <div>로그인: <b>{currentUser?.name ?? "-"}</b></div>
                 <div style={{display: "flex", gap:8}}>
-                    <button className="btn" onClick={renderPlaceholder}>스켈레톤 보기</button>
-                    <button className="btn" onClick={Demo}>샘플 주입</button>
-                    <button className="logout" onClick={onLogout}>로그아웃</button>
+                    <button className={styles.logout} onClick={onLogout}>로그아웃</button>
                 </div>
                 </header>
 
-                <div className="content">
-                <div className="toolbar">
-                    <input ref={qRef} className="input" placeholder="검색(신청자/건명/코드)" value={query} onChange={(e) => setQuery(e.target.value)}/>
-                    <span className="subtitle">행을 클릭하면 상세에서 결재 승인할 수 있습니다.</span>
+                <div className={styles.content}>
+                <div className={styles.toolbar}>
+                    <input ref={qRef} className={styles.input} placeholder="검색(신청자/건명/코드)" value={query} onChange={(e) => setQuery(e.target.value)}/>
+                    <span className={styles.subtitle}>행을 클릭하면 상세에서 결재 승인할 수 있습니다.</span>
                 </div>
 
-                <section className="card">
+                <section className={styles.card}>
                     <table>
                     <thead>
                         <tr>
@@ -229,18 +203,18 @@ function ApprovalApproved(){
                         {showSkeleton && rows.length === 0 ? (
                             /* 스켈레톤 */
                             Array.from({length: 5}).map((_, i) => (
-                                <tr key={`sk-${i}`} className="ghost">
-                                    <td><div className="skeleton sk-text sk-mid" /></td>
-                                    <td><div className="skeleton sk-text sk-narrow" /></td>
-                                    <td><div className="skeleton sk-text sk-mid" /></td>
-                                    <td><div className="skeleton sk-text sk-wide" /></td>
-                                    <td><div className="skeleton sk-text sk-mid" /></td>
-                                    <td><div className="skeleton sk-text sk-narrow" /></td>
+                                <tr key={`sk-${i}`} className={styles.ghost}>
+                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
+                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skNarrow}`} /></td>
+                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
+                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skWide}`} /></td>
+                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
+                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skNarrow}`} /></td>
                                 </tr>
                             ))
                         ) : rows.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="muted" style ={{textAlign: "center", padding: "16px"}}>
+                                <td colSpan={6} className={styles.muted} style ={{textAlign: "center", padding: "16px"}}>
                                     데이터가 없음
                                 </td>
                             </tr>
@@ -250,13 +224,13 @@ function ApprovalApproved(){
                                 const done = r.isCompleted === true;
                                 return (
                                     <tr key={r.requestId ?? idx} onClick={() => openDrawer(row.data)} style = {{ cursor: "pointer"}}>
-                                        <td className="muted">{escapeHtml(row.approversText || "-")}</td>
+                                        <td className={styles.muted}>{escapeHtml(row.approversText || "-")}</td>
                                         <td>{escapeHtml(r.memberName || "-")}</td>
-                                        <td className="muted">{r.requestDate ? fmt(r.requestDate) : "-"}</td>
+                                        <td className={styles.muted}>{r.requestDate ? fmt(r.requestDate) : "-"}</td>
                                         <td>{escapeHtml(r.title || "-")}</td>
-                                        <td className="muted">{escapeHtml(r.approvalCode || "-")}</td>
+                                        <td className={styles.muted}>{escapeHtml(r.approvalCode || "-")}</td>
                                         <td>
-                                            <span className={`badge ${done ? "ok" : "no"}`}>{done ? "완료":"미완료"}</span>
+                                            <span className={`${styles.badge} ${done ? styles.ok : styles.no}`}>{done ? "완료":"미완료"}</span>
                                         </td>
                                     </tr>
                                 );
@@ -269,20 +243,20 @@ function ApprovalApproved(){
             </main>
 
             {/* <!-- detail drawer --> */}
-            <div className={`drawer ${drawerData ? "show" : ""}`} aria-hidden={drawerData ? "false" : "true"}>
-            <div className="shade" onClick={closeDrawer}></div>
-            <div className="panel" role="dialog" aria-modal="true">
+            <div className={`${styles.drawer} ${drawerData ? styles.show : ""}`} aria-hidden={drawerData ? "false" : "true"}>
+            <div className={styles.shade} onClick={closeDrawer}></div>
+            <div className={styles.panel} role="dialog" aria-modal="true">
                 <header>
-                <div className="head-left">
+                <div className={styles.headLeft}>
                     <strong>결재 상세</strong>
                     <span id="statusBadge" dangerouslySetInnerHTML={{__html: approveState.badgeHtml}}></span>
                 </div>
-                <div class="head-right">
-                    <button id="approveBtn" className="btn btn-approve" onClick={approveCurrent} disabled={approveState.disabled} title={approveState.title}>{approveState.label}</button>
-                    <button className="btn" onClick={closeDrawer}>닫기</button>
+                <div className={styles.headRight}>
+                    <button id="approveBtn" className={`${styles.btn} ${styles.btnApprove}`} onClick={approveCurrent} disabled={approveState.disabled} title={approveState.title}>{approveState.label}</button>
+                    <button className={styles.btn} onClick={closeDrawer}>닫기</button>
                 </div>
                 </header>
-                <div className="body" id="detail">
+                <div className={styles.body} id="detail">
                     {drawerData && (
                         <>
                         <DetailGrid data={drawerData} />
@@ -293,7 +267,7 @@ function ApprovalApproved(){
             </div>
             </div>
 
-            <div id="toast" className={`toast ${toast.show ? "show" : ""}`} role="status" aria-live="polite" style={{background: toast.danger ? "#dc2626" : undefined}}>{toast.msg}</div>
+            <div id="toast" className={`${styles.toast} ${toast.show ? styles.show : ""}`} role="status" aria-live="polite" style={{background: toast.danger ? "#dc2626" : undefined}}>{toast.msg}</div>
             </div>
     );
 }
@@ -304,19 +278,19 @@ function DetailGrid({data}){
     const approversText = (data.approvers || []).map((a) => `${escapeHtml(a.name)} (${escapeHtml(a.studentId)})`).join(", ");
 
     return (
-        <div className="grid">
-            <div className="k">결재자</div><div dangerouslySetInnerHTML={{__html: approversText || "-"}} />
-            <div className="k">신청자</div><div>{escapeHtml(r.memberName || "-")}</div>
-            <div className="k">요청일</div><div>{r.requestDate ? fmt(r.requestDate) : "-"}</div>
-            <div className="k">건명</div><div>{escapeHtml(r.title || "-")}</div>
-            <div className="k">예산코드</div><div>{escapeHtml(r.approvalCode || "-")}</div>
-            <div className="k">금액</div><div>{money(r.requestedAmount)} 원</div>
-            <div className="k">계좌번호</div><div>{escapeHtml(r.accountNumber || "-")}</div>
-            <div className="k">예금주</div><div>{escapeHtml(r.payerName || "-")}</div>
-            <div className="k">내역</div><div>{escapeHtml(r.requestDetail || "-")}</div>
-            <div className="k">완료여부</div>
+        <div className={styles.grid}>
+            <div className={styles.k}>결재자</div><div dangerouslySetInnerHTML={{__html: approversText || "-"}} />
+            <div className={styles.k}>신청자</div><div>{escapeHtml(r.memberName || "-")}</div>
+            <div className={styles.k}>요청일</div><div>{r.requestDate ? fmt(r.requestDate) : "-"}</div>
+            <div className={styles.k}>건명</div><div>{escapeHtml(r.title || "-")}</div>
+            <div className={styles.k}>예산코드</div><div>{escapeHtml(r.approvalCode || "-")}</div>
+            <div className={styles.k}>금액</div><div>{money(r.requestedAmount)} 원</div>
+            <div className={styles.k}>계좌번호</div><div>{escapeHtml(r.accountNumber || "-")}</div>
+            <div className={styles.k}>예금주</div><div>{escapeHtml(r.payerName || "-")}</div>
+            <div className={styles.k}>내역</div><div>{escapeHtml(r.requestDetail || "-")}</div>
+            <div className={styles.k}>완료여부</div>
             <div>
-                {r.isCompleted === true ? <span className="badge ok">완료</span> : <span className="badge no" >미완료</span>}
+                {r.isCompleted === true ? <span className={`${styles.badge} ${styles.ok}`}>완료</span> : <span className={`${styles.badge} ${styles.no}`} >미완료</span>}
             </div>
         </div>
     );
@@ -327,8 +301,8 @@ function Receipt({data}) {
     const r = data.approvalRequests || {};
     const imgSrc = toSrc(r.receiptFile || data.byteFile);
     return (
-        <div className="imgbox">
-            {imgSrc ? <img alt="receipt" src={imgSrc} /> : <div className="muted">영수증 이미지 없음</div>}
+        <div className={styles.imgbox}>
+            {imgSrc ? <img alt="receipt" src={imgSrc} /> : <div className={styles.muted}>영수증 이미지 없음</div>}
         </div>
     );
 }
