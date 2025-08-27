@@ -14,6 +14,50 @@ const fmtDateYYYYMMDD = (v) => {
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
+const roleNameFromCode = (code) => {
+  switch (Number(code)) {
+    case 200: return "Presidency";
+    case 201: return "Manager";
+    case 202: return "Member";
+    default:  return "User";
+  }
+};
+
+const toLegacyOrg = (root) => {
+    if (!root || typeof root !== "object") return null;
+
+    const toPerson = (n) => ({
+        memberId: n.id,
+        name: n.name,
+        departmentName: n.departmentName,
+        roleCode: n.roleCode,
+        roleName: roleNameFromCode(n.roleCode),
+    });
+
+    const legacy = {
+        leaf: toPerson(root),
+        children: [],
+        nodes: [],
+    };
+
+        const kids = Array.isArray(root.children) ? root.children : [];
+
+    kids.forEach((ch) => {
+        if (Number(ch.roleCode) === 201) {
+        // 부서장 노드
+        legacy.nodes.push({
+            leaf: toPerson(ch),
+            children: (Array.isArray(ch.children) ? ch.children : []).map(toPerson),
+            nodes: [],
+        });
+        } else {
+        // 부회장(200) 등 기타 상위 직책
+        legacy.children.push(toPerson(ch));
+        }
+    });
+
+    return legacy;
+};
 
 function ApprovalRequestPage(){
     const navigate = useNavigate();
@@ -51,7 +95,7 @@ function ApprovalRequestPage(){
                 setUser(i);
             } catch (e) {
                 console.error(e);
-                navigate("/");
+                /* navigate("/"); */
             }
         })();
     }, [navigate]);
@@ -66,11 +110,12 @@ function ApprovalRequestPage(){
                     throw new Error(t || "조직도 로드 실패");
                 }
                 const body = await res.json().catch(() => ({}));
-                if (typeof body?.result !== "string"){
-                    throw new Error("서버 result 타입이 문자열이 아닙니다.");
+                const treeRoot = body?.result;
+                if (!treeRoot || typeof treeRoot !== "object") {
+                    throw new Error("서버 result가 객체 형태가 아닙니다.");
                 }
-                const tree = JSON.parse(body.result);
-                if(!aborted) setOrg(tree);
+                const legacy = toLegacyOrg(treeRoot);
+                if(!aborted) setOrg(legacy);
             } catch(e){
                 console.error(e);
             }
@@ -81,7 +126,7 @@ function ApprovalRequestPage(){
     /* 선택된 승인자 ID */
     const approverIds = useMemo(() => Array.from(selected.keys()), [selected]);
 
-    /* 미리보기 페이로드 */
+    /* 미리보기 페이로드 콘솔 확인용으로 */
     const preview = useMemo(() => {
         return {
             title: title.trim(),
@@ -170,7 +215,7 @@ function ApprovalRequestPage(){
 
             console.log("submit payloads:", preview);
             alert("전송 페이로드 콘솔에서 확인")
-        },[approverIds.length, openDrawer, preview]
+        },[approverIds.length, openDrawer, preview/* , accountNumber, requestDate, requestDetail, requestedAmount, title, approvalCode, user?.studentId, payerName */]
     );
 
     /* 부서/루트 렌더 유틸함수 */
@@ -288,11 +333,6 @@ function ApprovalRequestPage(){
                         }}>초기화</button>
                         </div>
                     </form>
-
-                    <div>
-                        <div className={styles.muted}>요청 미리보기(전송 페이로드)</div>
-                        <pre className={styles.preview}>{JSON.stringify(preview, null, 2)}</pre>
-                    </div>
                     </div>
                 </section>
                 </div>
@@ -330,30 +370,30 @@ function ApprovalRequestPage(){
                     )}
 
                     {/* 부서 */}
-              {Array.isArray(org?.nodes) &&
-                org.nodes.map((nd, i) => {
-                  const deptName = (nd.leaf && nd.leaf.departmentName) || "부서";
-                  const items = [
-                    ...(nd.leaf && matchFilter(nd.leaf) ? [{ ...nd.leaf, __label: "부서장" }] : []),
-                    ...((Array.isArray(nd.children) ? nd.children : []).filter(matchFilter)),
-                  ];
-                  if (items.length === 0) return null;
-                  return (
-                    <Node key={`dept-${i}`} title={deptName} rightLabel={nd.leaf?.roleName} defaultOpen={expandAll}>
-                      {items.map((p) =>
-                        p.__label ? (
-                          <PersonRow key={`mgr-${p.memberId}`} p={p} emphLabel={p.__label} />
-                        ) : (
-                          <PersonRow key={`mem-${p.memberId}`} p={p} />
-                        )
-                      )}
-                    </Node>
-                  );
-                })}
+                    {Array.isArray(org?.nodes) &&
+                        org.nodes.map((nd, i) => {
+                        const deptName = (nd.leaf && nd.leaf.departmentName) || "부서";
+                        const items = [
+                            ...(nd.leaf && matchFilter(nd.leaf) ? [{ ...nd.leaf, __label: "부서장" }] : []),
+                            ...((Array.isArray(nd.children) ? nd.children : []).filter(matchFilter)),
+                        ];
+                        if (items.length === 0) return null;
+                        return (
+                            <Node key={`dept-${i}`} title={deptName} rightLabel={nd.leaf?.roleName} defaultOpen={expandAll}>
+                            {items.map((p) =>
+                                p.__label ? (
+                                <PersonRow key={`mgr-${p.memberId}`} p={p} emphLabel={p.__label} />
+                                ) : (
+                                <PersonRow key={`mem-${p.memberId}`} p={p} />
+                                )
+                            )}
+                            </Node>
+                        );
+                        })}
+                    </div>
+                </div>
             </div>
-        </div>
-        </div>
-        </div>
+            </div>
         </div>
     );
 }

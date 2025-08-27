@@ -52,3 +52,216 @@ body{margin:0; background:var(--bg); color:var(--text); font:14px/1.5 system-ui,
 .badge.warn{background:rgba(245,158,11,.12); color:var(--warn)}
 .actions{margin-top:8px; display:flex; justify-content:flex-end}
 .danger{background:var(--danger); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer}
+
+/* userpg.module.css */
+
+/* ---------- MODAL OVERLAY ---------- */
+.modal {
+  /* color tokens (모달 내부에서만 사용) */
+  --text: #3C3C3C;
+  --main: #F4A261;   /* soft orange */
+  --sub:  #2A9D8F;   /* mint */
+  --point:#E76F51;   /* coral red */
+
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 1000;
+
+  /* 배경: 살짝 요즘 감성 + 블러 */
+  background:
+    radial-gradient(60% 80% at 50% 20%, rgba(244,162,97,.10) 0%, rgba(231,111,81,.08) 50%, rgba(0,0,0,.30) 100%),
+    rgba(10,10,10,.22);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+
+  animation: fadeIn .18s ease-out;
+}
+
+/* ---------- MODAL CARD ---------- */
+.modalBody {
+  position: relative;
+  width: min(760px, calc(100vw - 48px));
+  max-height: min(80vh, 780px);
+  overflow: auto;
+
+  background: #fff;                /* 화이트 배경 고정 */
+  color: var(--text);
+  border-radius: 20px;
+  padding: 22px 22px 18px;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow:
+    0 40px 80px rgba(0,0,0,.18),
+    0 10px 28px rgba(0,0,0,.10);
+
+  animation: pop .22s cubic-bezier(.2,.8,.2,1);
+}
+
+/* 상단 그라데이션 라인 (포인트) */
+.modalBody::before {
+  content: "";
+  position: absolute;
+  left: 10px; right: 10px; top: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--main), var(--sub), var(--point));
+  opacity: .95;
+}
+
+/* 제목 */
+.modalBody h3 {
+  margin: 10px 4px 16px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: #232323;
+  position: relative;
+}
+
+/* ---------- FORM GRID ---------- */
+.formGrid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px 14px;
+  margin: 8px 2px 4px;
+}
+
+.formGrid label {
+  font-weight: 700;
+  color: #555;
+  padding-top: 10px;
+}
+
+/* inputs & selects */
+.formGrid input,
+.formGrid select {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #E8E8EB;
+  background: #fff;
+  color: #222;
+  padding: 0 14px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.03);
+}
+
+/* select 화살표 커스텀 */
+.formGrid select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #9aa0a6 50%),
+    linear-gradient(135deg, #9aa0a6 50%, transparent 50%),
+    linear-gradient(to right, #e5e7eb, #e5e7eb);
+  background-position:
+    calc(100% - 22px) calc(50% - 4px),
+    calc(100% - 16px) calc(50% - 4px),
+    calc(100% - 42px) 50%;
+  background-size: 6px 6px, 6px 6px, 1px 1.6rem;
+  background-repeat: no-repeat;
+}
+
+.formGrid input::placeholder { color: #a3a3a3; }
+
+.formGrid input:focus,
+.formGrid select:focus {
+  border-color: var(--sub);
+  box-shadow: 0 0 0 4px rgba(42,157,143,.16);
+  transform: translateY(-1px);
+}
+
+/* 모바일 단일열 */
+@media (max-width: 560px) {
+  .formGrid { grid-template-columns: 1fr; }
+  .formGrid label { padding-top: 0; }
+}
+
+/* ---------- FOOTER BUTTONS ---------- */
+.modalFooter {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 16px;
+  margin-top: 18px;
+  border-top: 1px dashed #EDEDED;
+}
+
+/* 기본 버튼 스타일 (닫기 등) */
+.modalFooter button {
+  appearance: none;
+  border: 0;
+  background: #F6F7F9;
+  color: #1f2937;
+  font-weight: 700;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .18s ease, background .18s ease, filter .18s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.modalFooter button:hover {
+  background: #EEF0F4;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,.10);
+}
+
+.modalFooter button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+/* 프라이머리 버튼 (적용/저장/변경 등) */
+.btnPrimary {
+  background: linear-gradient(135deg, var(--main), var(--sub) 60%, var(--point));
+  color: #fff !important;
+  box-shadow:
+    0 10px 20px rgba(231,111,81,.22),
+    0 2px 6px rgba(0,0,0,.10);
+}
+
+.btnPrimary:hover {
+  filter: saturate(1.05) brightness(1.02);
+  box-shadow:
+    0 14px 24px rgba(231,111,81,.28),
+    0 3px 8px rgba(0,0,0,.10);
+}
+
+.btnPrimary:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ---------- SCROLLBAR (가벼운 커스텀) ---------- */
+.modalBody::-webkit-scrollbar { width: 10px; }
+.modalBody::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--sub), var(--point));
+  border-radius: 999px;
+  border: 2px solid #fff;
+}
+.modalBody::-webkit-scrollbar-track {
+  background: #f1f1f3;
+  border-radius: 999px;
+}
+
+/* ---------- ANIMATIONS ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pop {
+  from { transform: translateY(6px) scale(.98); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal, .modalBody { animation: none !important; }
+  * { transition: none !important; }
+}
