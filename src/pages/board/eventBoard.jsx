@@ -123,7 +123,8 @@
         const handleDelete = async () => {
             if(!viewEvent) return;
             const postId = viewEvent.postId ?? viewEvent.id;
-            if (!confirm('정말 삭제하시겠습니가?')) return;
+            const ok = typeof window !== 'undefined' && window.confirm('정말 삭제하시겠습니까?');
+            if(!ok) return;
             try {
                 const res = await fetchWithAuth(`${API_BASE_URL_EVENT}/delete?post_id=${postId}`, {
                     method: 'DELETE'

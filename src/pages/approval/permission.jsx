@@ -1,34 +1,9 @@
 import React, {useCallback, useEffect, useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loadUserInfo, /* fetchWithAuth,  */doLogout } from "../../utils/auth";
-import "./permission.css";
+import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
+import styles from "./permission.module.css";
 
-/* 샘플 */
-const ORG_API = {
-    status: 200,
-    message: "department tree",
-    result: {
-        nodes: [
-            {
-                nodes: [],
-                children: [
-                    { memberId:11, name: "홍보부원1account", departmentName: "홍보", roleName: "Member", roleCode: 202},
-                ],
-                leaf: { memberId:10, name: "홍보부장account", departmentName: "홍보", roleName: "Manager", roleCode: 201},
-            },
-            {
-                nodes: [],
-                children: [
-                    { memberId:8, name: "총무부원1account", departmentName: "총무", roleName: "Member", roleCode: 202},
-                    { memberId:9, name: "총무부원2account", departmentName: "총무", roleName: "Member", roleCode: 202},
-                ],
-                leaf: { memberId:7, name: "총무부장account", departmentName: "총무", roleName: "Manager", roleCode: 201},
-            },
-        ],
-        children: [{ memberId:6, name: "김민준", departmentName: "부회장", roleName: "Presidency", roleCode: 200}],
-        leaf: { memberId:5, name: "조승훈", departmentName: "회장", roleName: "Presidency", roleCode: 200},
-    },
-};
+const API_BASE = "http://localhost:8080/api";
 
 function colorBar(idx){
     const colors = ["var(--barA)","var(--barB)","var(--barC)","var(--barD)"];
@@ -38,23 +13,23 @@ function colorBar(idx){
 function DeptColum({dept, index}){
     const members = dept.children || [];
     return (
-        <div className="dept">
-            <div className="bar" style={{background: colorBar(index)}}>{dept.leaf?.departmentName}</div>
-            <div className="bd">
-                <div className="sec">
+        <div className={styles.dept}>
+            <div className={styles.bar} style={{background: colorBar(index)}}>{dept.leaf?.departmentName}</div>
+            <div className={styles.bd}>
+                <div className={styles.sec}>
                     <h4>부서장</h4>
-                    <div className="mgr">{dept.leaf?.name}</div>
-                    <div className="muted">역할: {dept.leaf?.roleName} · 코드 {dept.leaf?.roleCode}</div>
+                    <div className={styles.mgr}>{dept.leaf?.name}</div>
+                    <div className={styles.muted}>역할: {dept.leaf?.roleName} · 코드 {dept.leaf?.roleCode}</div>
                 </div>
-                <div className="sec">
+                <div className={styles.sec}>
                     <h4>구성원</h4>
                     {members.length === 0 ? (
-                        <div className="muted">없음</div>
+                        <div className={styles.muted}>없음</div>
                     ): (
-                        <ul className="list">
+                        <ul className={styles.list}>
                             {members.map((m) => (
                                 <li key={m.memberId}>
-                                    {m.name}<span className="muted">({m.roleName}·${m.roleCode})</span>
+                                    {m.name}<span className={styles.muted}>({m.roleName}·${m.roleCode})</span>
                                 </li>
                             ))}
                         </ul>
@@ -66,11 +41,13 @@ function DeptColum({dept, index}){
 }
 
 function PermissionPage(){
+
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
 
-    /* 조직도 데이터(수정필요) */
-    const [tree]= useState(ORG_API.result);
+    /* 조직도 데이터 > API 따옴 */
+    const [tree, setTree]= useState(null);
+
     /* 폼 > 부서 변경 */
     const [deptStudentId, setDeptStudentId] = useState("");
     const [deptDepartment, setDeptDepartment] = useState("홍보");
@@ -86,10 +63,32 @@ function PermissionPage(){
                 setUser(i);
             } catch (e) {
                 console.error(e);
-                /* navigate("/"); */
+                navigate("/");
             }
         })();
     }, [navigate]);
+
+      useEffect(() => {
+        let aborted = false;
+        (async () => {
+            try {
+                const res = await fetchWithAuth(`${API_BASE}/department/tree`);
+                if (!res.ok) {
+                    const t = await res.text().catch(()=> "");
+                    throw new Error(t || "조직도 로드 실패");
+                }
+                const body = await res.json().catch(()=> ({}));
+                if (typeof body?.result !== "string") {
+                    throw new Error("서버 result 타입이 문자열이 아닙니다.");
+                }
+                const parsed = JSON.parse(body.result);
+                if (!aborted) setTree(parsed);
+            } catch (e) {
+                console.error(e);
+            }
+            })();
+            return () => { aborted = true; };
+        }, []);
 
     const onLogout = useCallback(async () => {
         await doLogout();
@@ -108,14 +107,6 @@ function PermissionPage(){
             department: deptDepartment,
         };
         console.log("부서 변경 JSON:", payload);
-        // 실제 API 연결 시:
-        // const res = await fetchWithAuth(`${API_BASE_URL}/admin/department`, {
-        //   method: "POST",
-        //   body: JSON.stringify(payload),
-        // });
-        // const json = await res.json();
-        // if (!res.ok) alert(json.message || "부서 변경 실패"); else alert("부서 변경 완료");
-
         alert("부서 변경 JSON을 콘솔에 출력함");
     }, [deptStudentId, deptDepartment]);
 
@@ -128,63 +119,53 @@ function PermissionPage(){
             roleCode: Number(roleCode),
         };
         console.log("역할 변경 JsoN:", payload);
-        
-        // 실제 API 연결 시:
-        // const res = await fetchWithAuth(`${API_BASE_URL}/admin/role`, {
-        //   method: "POST",
-        //   body: JSON.stringify(payload),
-        // });
-        // const json = await res.json();
-        // if (!res.ok) alert(json.message || "역할 변경 실패"); else alert("역할 변경 완료");
-
         alert("역할 변경 JSON을 콘솔에 출력");
     }, [roleStudentId, roleReason, roleCode]);
 
     return (
-          <div className="wrap">
-            <aside className="sidebar">
-            <div className="brand">컴퓨터공학부 종합관리시스템</div>
-            <div className="section-title">메뉴</div>
-            <nav className="nav">
+          <div className={styles.wrap}>
+            <aside className={styles.sidebar}>
+            <div className={styles.brand}>컴퓨터공학부 종합관리시스템</div>
+            <div className={styles["section-title"]}>메뉴</div>
+            <nav className={styles.nav}>
                 <Link to="/userpg">마이페이지</Link>
                 <Link to="/">문서 게시판</Link>
                 <Link to="/">이벤트 게시판</Link>
                 <Link to="/approval_req">결재 신청</Link>
                 <Link to="/approval_approved">결재</Link>
-                <Link to="/approval_skeleton">결재-스켈레톤</Link>
                 <Link to="/monthly_page">월별 결산</Link>
                 <Link to="/">설정</Link>
-                <Link to="/permission" className="active">권한변경</Link>
+                <Link to="/permission" className={styles.active}>권한변경</Link>
             </nav>
             </aside>
 
-            <main className="main">
-                <header className="header">
+            <main className={styles.main}>
+                <header className={styles.header}>
                 <div>로그인: <b>{user ? `${user.name ?? "-"} (${user.studentId ?? "-"})` : "-"}</b></div>
-                <button className="logout" onClick={onLogout}>로그아웃</button>
+                <button className={styles.logout} onClick={onLogout}>로그아웃</button>
                 </header>
 
-            <div className="content">
+            <div className={styles.content}>
                 {/* <!-- 조직도 --> */}
-                <section className="panel">
-                <div className="hd">조직도</div>
-                <div className="bd">
-                    <div className="chart">
-                    <div className="level-0">
-                        <div className="box">
+                <section className={styles.panel}>
+                <div className={styles.hd}>조직도</div>
+                <div className={styles.bd}>
+                    <div className={styles.chart}>
+                    <div className={styles["level-0"]}>
+                        <div className={styles.box}>
                             {rootLeaf ? `${rootLeaf.departmentName} : ${rootLeaf.name}` : "-"}
                         </div>
                     </div>
-                    <div className="connector"></div>
-                    <div className="row level-1">
+                    <div className={styles.connector}></div>
+                    <div className={`${styles.row} ${styles["level-1"]}`}>
                         {presidents.map((c) => (
-                            <div key={c.memberId} className="box">
+                            <div key={c.memberId} className={styles.box}>
                                 {c.departmentName} : {c.name}
                             </div>
                         ))}
                     </div>
-                    <div className="connector"></div>
-                    <div className="row">
+                    <div className={styles.connector}></div>
+                    <div className={styles.row}>
                         {depts.map((d, i) => (
                             <DeptColum key={d.leaf?.memberId ?? i} dept={d} index={i} />
                         ))}
@@ -194,20 +175,20 @@ function PermissionPage(){
                 </section>
 
                 {/* <!-- 권한 변경 --> */}
-                <section className="panel">
-                <div className="hd">권한 변경</div>
-                <div className="bd">
-                    <div className="grid-forms">
-                    <div className="form">
+                <section className={styles.panel}>
+                <div className={styles.hd}>권한 변경</div>
+                <div className={styles.bd}>
+                    <div className={styles["grid-forms"]}>
+                    <div className={styles.form}>
                         <h3>부서 변경</h3>
-                        <div className="f" onSubmit={submitDept}>
-                        <div className="field">
+                        <div className={styles.f} onSubmit={submitDept}>
+                        <div className={styles.field}>
                             <label htmlFor="dept-studentId">학번</label>
-                            <input id="dept-studentId" className="input" name="studentId" placeholder="예: 20210001" value={deptStudentId} onChange={(e) => setDeptStudentId(e.target.value)} />
+                            <input id="dept-studentId" className={styles.input} name="studentId" placeholder="예: 20210001" value={deptStudentId} onChange={(e) => setDeptStudentId(e.target.value)} />
                         </div>
-                        <div className="field">
+                        <div className={styles.field}>
                             <label htmlFor="dept-department">부서</label>
-                            <select id="dept-department" className="select" name="department" value={deptDepartment} onChange={(e) => setDeptDepartment(e.target.value)}>
+                            <select id="dept-department" className={styles.select} name="department" value={deptDepartment} onChange={(e) => setDeptDepartment(e.target.value)}>
                             <option value="기획">기획</option>
                             <option value="문화">문화</option>
                             <option value="체육">체육</option>
@@ -219,33 +200,33 @@ function PermissionPage(){
                             <option value="컴퓨터공학부">컴퓨터공학부</option>
                             </select>
                         </div>
-                        <div><button className="btn btn-primary" type="submit">변경</button></div>
-                        <div className="help">요청 JSON은 콘솔에 출력.</div>
+                        <div><button className={`${styles.btn} ${styles["btn-primary"]}`} type="submit">변경</button></div>
+                        <div className={styles.help}>요청 JSON은 콘솔에 출력.</div>
                         </div>
                     </div>
 
-                    <div className="form">
+                    <div className={styles.form}>
                         <h3>역할 변경</h3>
-                        <form className="f" onSubmit={submitRole}>
-                        <div className="field">
+                        <form className={styles.f} onSubmit={submitRole}>
+                        <div className={styles.field}>
                             <label htmlFor="role-studentId">학번</label>
-                            <input id="role-studentId" className="input" name="studentId" placeholder="예: 20210001" value={roleStudentId} onChange={(e)=>setRoleStudentId(e.target.value)}/>
+                            <input id="role-studentId" className={styles.input} name="studentId" placeholder="예: 20210001" value={roleStudentId} onChange={(e)=>setRoleStudentId(e.target.value)}/>
                         </div>
-                        <div className="field">
+                        <div className={styles.field}>
                             <label htmlFor="role-reason">사유</label>
-                            <textarea id="role-reason" className="input" name="reason" rows={3} placeholder="변경 사유 입력" value={roleReason} onChange={(e) => setRoleReason(e.target.value)}></textarea>
+                            <textarea id="role-reason" className={styles.input} name="reason" rows={3} placeholder="변경 사유 입력" value={roleReason} onChange={(e) => setRoleReason(e.target.value)}></textarea>
                         </div>
-                        <div className="field">
+                        <div className={styles.field}>
                             <label htmlFor="">역할</label>
-                            <select id="role-code" className="select" name="roleCode" value={roleCode} onChange={(e) => setRoleCode(e.target.value)}>
+                            <select id="role-code" className={styles.select} name="roleCode" value={roleCode} onChange={(e) => setRoleCode(e.target.value)}>
                             <option value="100">100 (일반)</option>
                             <option value="200">200 (회장)</option>
                             <option value="201">201 (부장)</option>
                             <option value="202">202 (부원)</option>
                             </select>
                         </div>
-                        <div><button className="btn btn-primary" type="submit">변경</button></div>
-                        <div className="help">roleCode 숫자만 전송. 콘솔 확인.</div>
+                        <div><button className={`${styles.btn} ${styles["btn-primary"]}`} type="submit">변경</button></div>
+                        <div className={styles.help}>roleCode 숫자만 전송. 콘솔 확인.</div>
                         </form>
                     </div>
                     </div>

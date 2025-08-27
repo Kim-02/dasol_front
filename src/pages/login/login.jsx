@@ -63,7 +63,7 @@ function Login(){
             const data = await res.json();
             localStorage.setItem('accessToken', data.accessToken);
             if(payload.remember) localStorage.setItem('refreshToken', data.refreshToken);
-            navigate('/');
+            navigate('/main');
 
             console.log('POST 로그인 경로', payload);
             showToast('로그인 성공');
@@ -150,7 +150,7 @@ function Login(){
 
           <div className={styles.row} style={{ justifyContent: 'center', gap: 6 }}>
             <span className={styles.hint}>처음이신가요?</span>
-            <Link className={styles.link} to="/signup">회원가입</Link>
+            <Link className={styles.link} to="/signuppage">회원가입</Link>
           </div>
         </div>
       </section>

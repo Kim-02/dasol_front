@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef, useMemo} from "react";
 import styles from "./signup.module.css"
 import {Link, useNavigate} from "react-router-dom";
+import { fetchWithAuth } from "../../utils/auth";
 
 function Signup(){
     const navigate = useNavigate();
@@ -114,7 +115,7 @@ function Signup(){
             return;
         }
         /* TODO 실제 메일 전송 API */
-        await fetch (`http://localhost:8080/api/auth/verify`, {
+        await fetchWithAuth (`http://localhost:8080/api/auth/verify`, {
             method: 'POST',
             body: JSON.stringify({email: form.email})
         });

@@ -1,9 +1,9 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
-import "./monthly.css";
+import styles from "./monthly.module.css";
 
-const API_BASE_URL_MON = 'http://3.34.245.155/api';
+const API_BASE_URL_MON = 'http://localhost:8080/api';
 
 /* 헬퍼 */
 const yyyymm = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -34,13 +34,14 @@ const toSrc = (raw) => {
 }
 
 function CoverPage({ym}){
+
     return(
-        <section className="page">
-            <div className="cover">
+        <section className={styles.page}>
+            <div className={styles.cover}>
                 <div>
                     <h1>월별 결산</h1>
-                    <div className="m">{ym.replace("-", "년 ")}월</div>
-                    <p className="subtitle">컴퓨터공학부 종합관리시스템</p>
+                    <div className={styles.m}>{ym.replace("-", "년 ")}월</div>
+                    <p className={styles.subtitle}>컴퓨터공학부 종합관리시스템</p>
                 </div>
             </div>
         </section>
@@ -48,39 +49,39 @@ function CoverPage({ym}){
 }
 
 function Col({req, seq}){
-    if(!req) return <div className="col" />
+    if(!req) return <div className={styles.col} />
 
     const no = `${yymm(new Date(req.requestDate))}-${String(seq).padStart(2, "0")}`;
     const dt = yymmddDots(req.requestDate);
 
     return (
-        <div className="col">
-            <div className="hx">
-                <div className="dots">{no}</div>
-                <div className="dots">{dt}</div>
+        <div className={styles.col}>
+            <div className={styles.hx}>
+                <div className={styles.dots}>{no}</div>
+                <div className={styles.dots}>{dt}</div>
             </div>
-            <div className="row">
-                <span className="lbl">건명 :</span>
+            <div className={styles.row}>
+                <span className={styles.lbl}>건명 :</span>
                 {req.title || "-"}
             </div>
-            <div className="receiptWrap">
+            <div className={styles.receiptWrap}>
                 {req.receiptFile ? (
-                    <img className="receipt" alt="receipt" src={toSrc(req.receiptFile)} />
+                    <img className={styles.receipt} alt="receipt" src={toSrc(req.receiptFile)} />
                 ) : null}
             </div>
-            <div className="mini">
-                <div className="cell">
-                    <span className="lbl">예산 코드</span>
+            <div className={styles.mini}>
+                <div className={styles.cell}>
+                    <span className={styles.lbl}>예산 코드</span>
                     {req.approvalCode || "-"}
                 </div>
-                <div className="cell">
-                    <span className="lbl">금액</span>
+                <div className={styles.cell}>
+                    <span className={styles.lbl}>금액</span>
                     {money(req.requestedAmount)} 원
                 </div>
             </div>
-            <div className="foot">
-                <div className="cell">확인</div>
-                <div className="cell">결재</div>
+            <div className={styles.foot}>
+                <div className={styles.cell}>확인</div>
+                <div className={styles.cell}>결재</div>
             </div>
         </div>
     );
@@ -88,9 +89,9 @@ function Col({req, seq}){
 
 function ContentPage({pair, startIndex}){
     return (
-        <section className="page">
-            <div className="sheet">
-                <div className="two">
+        <section className={styles.page}>
+            <div className={styles.sheet}>
+                <div className={styles.two}>
                     <Col req={pair[0]} seq={startIndex + 1} />
                     <Col req={pair[1]} seq={startIndex + 2} />
                 </div>
@@ -117,7 +118,7 @@ function MonthPage(){
                 setUser(i);
             } catch (e) {
                 console.error(e);
-                /* navigate("/"); */
+                navigate("/");
             }
         })();
     }, [navigate]);
@@ -178,57 +179,56 @@ function MonthPage(){
     }, [requests, month]);
 
     return(
-        <div className="wrap">
-            <aside className="sidebar">
-                <div className="brand">컴퓨터공학부 종합관리시스템</div>
-                <div className="section-title">메뉴</div>
-                <nav className="nav">
+        <div className={styles.wrap}>
+            <aside className={styles.sidebar}>
+                <div className={styles.brand}>컴퓨터공학부 종합관리시스템</div>
+                <div className={styles["section-title"]}>메뉴</div>
+                <nav className={styles.nav}>
                     <Link to="/userpg">마이페이지</Link>
                     <Link to="/">문서 게시판</Link>
                     <Link to="/">이벤트 게시판</Link>
                     <Link to="/approval_req">결재 신청</Link>
                     <Link to="/approval_approved">결재</Link>
-                    <Link to="/approval_skeleton">결재-스켈레톤</Link>
-                    <Link to="/monthly_page" className="active">월별 결산</Link>
+                    <Link to="/monthly_page" className={styles.active}>월별 결산</Link>
                     <Link to="/">설정</Link>
                     <Link to="/permission">권한변경</Link>              
                 </nav>
             </aside>
 
-            <main className="main">
-                <header className="header">
+            <main className={styles.main}>
+                <header className={styles.header}>
                 <div>로그인: <b>{user ? `${user.name ?? "-"} (${user.studentId ?? "-"})` : "-"}</b></div>
-                <button className="logout" onClick={onLogout}>로그아웃</button>
+                <button className={styles.logout} onClick={onLogout}>로그아웃</button>
                 </header>
 
-                <div className="content">
-                <div className="toolbar">
-                    <label>월 선택{" "}<input className="input" type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="월 선택" /></label>
-                    <button className="btn" onClick={onPrint} disabled={loading}>PDF로 저장</button>
-                    <span className="subtitle">표지 1장 + 본문 A4 세로, 좌·우 2건</span>
+                <div className={styles.content}>
+                <div className={styles.toolbar}>
+                    <label>월 선택{" "}<input className={styles.input} type="month" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="월 선택" /></label>
+                    <button className={styles.btn} onClick={onPrint} disabled={loading}>PDF로 저장</button>
+                    <span className={styles.subtitle}>표지 1장 + 본문 A4 세로, 좌·우 2건</span>
                     {fetching ? (
-                        <span className="subtitle" aria-live="polite">
+                        <span className={styles.subtitle} aria-live="polite">
                             &nbsp;로딩 중...
                         </span>
                     ) : null}
                     {error ? (
-                        <span className="subtitle" style={{color: "#dc2626"}}>
+                        <span className={styles.subtitle} style={{color: "#dc2626"}}>
                             &nbsp;{error}
                         </span>
                     ): null}
                 </div>
 
-                <div className="print">
+                <div className={styles.print}>
                     {/* 표지 */}
                     <CoverPage ym={month} />
                     {/* 본문 */}
                     {pairs.length === 0 ? (
-                        <section className="page">
-                            <div className="cover">
+                        <section className={styles.page}>
+                            <div className={styles.cover}>
                                 <div>
                                     <h1>월별 결산</h1>
-                                    <div className="m">{month.replace("-", "년 ")}월</div>
-                                    <p className="subtitle">해당 월 데이터가 없스빈다.</p>
+                                    <div className={styles.m}>{month.replace("-", "년 ")}월</div>
+                                    <p className={styles.subtitle}>해당 월 데이터가 없스빈다.</p>
                                 </div>
                             </div>
                         </section>

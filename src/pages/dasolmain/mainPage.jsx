@@ -1,16 +1,13 @@
-import React, { useState, useEffect } from "react";
-import './mainPage.css'
+import React, { useState, useEffect, useCallback } from "react";
+import styles from './mainPage.module.css'
 import { doLogout, loadUserInfo } from "../../utils/auth";
-import { toggleDropdown } from "../../utils/boardUtils";
 import { useNavigate, Link} from "react-router-dom";
 
 function MainPage(){
-    const [userInfo, setUserInfo] = useState("로딩 중...");
-    const [dropdownboard, setDropdownBoard] = useState(false);
-    const [dropdownApproval, setDropdownApproval] = useState(false);
+    const [user, setUser] = useState("null");
     const navigate = useNavigate();
 
-    useEffect(() => {
+/*     useEffect(() => {
         // 페이지 로드 시 정보 가져옴
         loadUserInfo()
         .then(result => {
@@ -19,91 +16,53 @@ function MainPage(){
         })
         .catch(err => {
             alert("로그인이 필요함");
-            /* navigate('/'); */
+            navigate('/');
         });
-    }, []);
+    }, []); */
+    useEffect(() => {
+        (async () => {
+            try{
+                const i = await loadUserInfo();
+                setUser(i);
+            } catch (e) {
+                console.error(e);
+                navigate("/");
+            }
+        })();
+    }, [navigate]);
 
-    const handleLogout = async () => {
+    const onLogout = useCallback(async () => {
         await doLogout();
         navigate("/");
-    };
+    }, [navigate]);
 
     return (
-        <div className="main-wrapper">
-            {/* 사이드바 */}
-            <nav className="sidebar">
-                <ul>
-                <li><Link to="미개발" className="sidebar-link">대시보드</Link></li>
-                
-                {/* 게시판 드롭다운 */}
-                <li className="dropdown">
-                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownBoard)}>게시판 <span className="arrow">
-                        {dropdownboard ? "▲" : "▼"}</span>
-                    </div>
-                    {dropdownboard && (
-                        <ul className={`dropdown-menu ${dropdownboard ? 'show' : ''}`}>
-                            <li><Link to="/document_board">문서게시판</Link></li>
-                            <li><Link to="/event_board">이벤트게시판</Link></li>
-                            <li><Link to="/inquiry_board.html">문의게시판</Link></li>
-                        </ul>
-                    )}
-                </li>
-                <li className="dropdown">
-                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownApproval)}>결재<span className="arrow">
-                        {dropdownApproval ? "▲" : "▼"}</span>
-                    </div>
-                    {dropdownApproval && (
-                        <ul className={`dropdown-menu ${dropdownApproval ? 'show' : ''}`}>
-                            <li><Link to="/approval_request" className="sidebar-link">결재 신청</Link></li>
-                            <li><Link to="/approval_process" className="sidebar-link">결재 처리</Link></li>
-                        </ul>
-                    )}
-                </li>
-                <li><Link to="/monthly_summary" className="sidebar-link">월별 결산</Link></li>
-                <li><Link to="/" className="sidebar-link">설정</Link></li>
-                <li><Link to="/eventpost" className="sidebar-link">이벤트작성테스트</Link></li>
-                </ul>
+          <div className={styles.wrap}>
+            <aside className={styles.sidebar}>
+            <div className={styles.brand}>컴퓨터공학부 종합관리시스템</div>
+            <div className={styles["section-title"]}>메뉴</div>
+            <nav className={styles.nav}>
+                <Link to="/userpg">마이페이지</Link>
+                <Link to="/">문서 게시판</Link>
+                <Link to="/">이벤트 게시판</Link>
+                <Link to="/approval_req">결재 신청</Link>
+                <Link to="/approval_approved">결재</Link>
+                <Link to="/monthly_page">월별 결산</Link>
+                <Link to="/">설정</Link>
+                <Link to="/permission">권한변경</Link>
             </nav>
+            </aside>
 
-            {/* 메인 */}
-            <div className="main">
-                {/* 헤더: 우측 상단 사용자 정보 */}
-                <header className="header">
-                {/* auth.js가 자동으로 이 요소를 채웁니다 */}
-                <div className="user-info" style={{cursor: "pointer"}} onClick={() => navigate("/user")}>
-                    {userInfo}
-                </div>
-                <button id="logoutBtn" className="logout-btn" onClick={handleLogout}>로그아웃</button>
+            <main className={styles.main}>
+                <header className={styles.header}>
+                <div>로그인: <b>{user ? `${user.name ?? "-"} (${user.studentId ?? "-"}）` : "-"}</b></div>
+                <button className={styles.logout} onClick={onLogout}>로그아웃</button>
                 </header>
 
-                {/* 본문: 추후 컨텐츠 영역 */}
-                <section className="content">
-                    <h1>대시보드</h1>
-                    <p>환영합니다! 좌측 메뉴에서 원하는 기능을 선택해주세요.</p>
-                    
-                    <div className="dashboard-cards">
-                        <div className="card">
-                        <h3>문서게시판</h3>
-                        <p>공지사항 및 문서를 확인하세요</p>
-                        <Link to="/document_board" className="card-link">바로가기</Link>
-                        </div>
-                        
-                        <div className="card">
-                        <h3>이벤트게시판</h3>
-                        <p>최신 이벤트 정보를 확인하세요</p>
-                        <Link to="/event_board" className="card-link">바로가기</Link>
-                        </div>
-                        
-                        <div className="card">
-                        <h3>문의게시판</h3>
-                        <p>궁금한 점을 문의하세요</p>
-                        <Link to="/inquiry_board" className="card-link">바로가기</Link>
-                        </div>
-                    </div>
-                </section>
-            </div>
+            </main>
         </div>
-    );
+
+    )
 }
 
 export default MainPage;

@@ -26,6 +26,13 @@ const toSrc = (raw) => {
 }
 
 function ApprovalSkeleton(){
+
+    useEffect(() => {
+        const prev = document.body.dataset.page;
+        document.body.dataset.page = "skeleton";   // 이 페이지 전용 표시
+        return () => { document.body.dataset.page = prev || ""; }; // 떠날 때 복구
+    }, []);
+
     /* 공간만 확보: 빈 컨테이너만 선언 */
     const [api, setApi] = useState({ status: 200, message: null, result: [] });
 

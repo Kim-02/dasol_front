@@ -3,308 +3,442 @@ import { Link, useNavigate } from "react-router-dom";
 import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
 import styles from "./approvalPage.module.css";
 
-/* 퍼킹 유틸함수 */
-const fmt = (dt) => {
-    const d = new Date(dt);
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
+const API_BASE = "http://localhost:8080/api";
+
+/* ====== 유틸 ====== */
+const fmt = (dt) => new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit"
+}).format(new Date(dt));
 const money = (n) => Number(n || 0).toLocaleString("ko-KR");
-const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, (m) => ({"&":"&amp;","<":"&lt;","&gt;":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const detectMine = (b64) => {
-    const s = (b64 || "").slice(0, 16);
-    if (s.startsWith("/9j")) return "image/jpeg";
-    if (s.startsWith("iVBOR")) return "image/png";
-    if (s.startsWith("R0lGOD")) return "image/gif";
-    return "image/*";
+const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (m) => ({"&":"&amp;","<":"&lt;","&gt;":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+/** result가 "항상 문자열"이라는 전제의 안전 파서 */
+const parseResultJSON = async (res, errMsg = "API 호출 실패") => {
+  if (!res.ok) {
+    const t = await res.text().catch(()=> "");
+    throw new Error(t || errMsg);
+  }
+  const body = await res.json().catch(()=> ({}));
+  const raw = body?.result;
+  if (typeof raw !== "string") {
+    throw new Error("서버 result 타입이 문자열이 아닙니다.");
+  }
+  try {
+    return JSON.parse(raw); // JSON 문자열(배열/객체 등) 이어야 함
+  } catch {
+    throw new Error("서버 result JSON 파싱 실패");
+  }
+};
+
+const detectMime = (b64) => {
+  const s = (b64 || "").slice(0, 16);
+  if (s.startsWith("/9j")) return "image/jpeg";
+  if (s.startsWith("iVBOR")) return "image/png";
+  if (s.startsWith("R0lGOD")) return "image/gif";
+  if (s.startsWith("UklGR")) return "image/webp";
+  return "image/*";
 };
 const toSrc = (raw) => {
-    if (!raw) return null;
-    const t = String(raw).trim();
-    if (t.startsWith("data:")) return t;
-    const b = t.replace(/\s+/g, "");
-    return `data:${detectMine(b)};base64,${b}`;
+  if (!raw) return null;
+  const t = String(raw).trim();
+  if (t.startsWith("data:")) return t;
+  const b = t.replace(/\s+/g, "");
+  return `data:${detectMime(b)};base64,${b}`;
 };
 
+
 function ApprovalApproved(){
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    /* 로그인 유저 정보 */
-    const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
-    /* 리스트 상태 */
-    const [api, setApi] = useState({ status: 200, message: null, result: [] });
-    const [query, setQuery] = useState("");
-    const [showSkeleton, setShowSkeleton] = useState(true);
-    const [drawerData, setDrawerData] = useState(null);
-    const [toast, setToast] = useState({show: false, msg: "", danger: false});
-    const qRef = useRef(null);
+  const [api, setApi] = useState({ status: 200, message: null, result: [] });
+  const [query, setQuery] = useState("");
+  const [showSkeleton, setShowSkeleton] = useState(true);
 
-    /* 유저정보 로드 */
-    useEffect(() => {
-        (async () => {
-            try{
-                const i = await loadUserInfo();
-                setCurrentUser(i);
-            } catch (e) {
-                console.error(e);
-                /* navigate("/"); */
-            }
-        })();
-    }, [navigate]);
+  /* 드로어/토스트 */
+  const [drawerData, setDrawerData] = useState(null); /* post 단위 */
+  const [toast, setToast] = useState({show: false, msg: "", danger: false});
+  const qRef = useRef(null);
 
-    const showToast = useCallback((msg, danger=false) => {
-        setToast({show:true, msg, danger});
-        setTimeout(() => setToast({show:false, masg:"", danger: false}), 1600);
-    }, []);
+  /* 유저정보 로드 */
+  useEffect(() => {
+    (async () => {
+      try{
+        const i = await loadUserInfo();
+        setCurrentUser(i);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, []);
 
-    /* 데이터 주입 가능하도록 공개 */
-    useEffect(() => {
-        window.injectApprovalData = (payload) => {
-            try {
-                const next = payload && payload.result ? payload : { status: 200, message: null, result: Array.isArray(payload) ? payload : [] };
-                setApi(next);
-                setShowSkeleton(false);
-            } catch  {
-                console.error("인젝 실패:", true);
-            }
-        };
-        /* 포커스 UX */
-        qRef.current?.focus();
-    }, [showToast]);
+  const showToast = useCallback((msg, danger=false) => {
+    setToast({show:true, msg, danger});
+    setTimeout(() => setToast({show:false, msg:"", danger:false}), 1600);
+  }, []);
 
-    /* 결과테이블 랜더 행으로 변환 */
-    const rows = useMemo(() => {
-        const built = (api.result || []).map((x) => ({
-            approversText: (x.approvers || []).map((a) => a.name).join(", "),
-            data: x,
-        }));
-        const q = query.trim().toLowerCase();
-        if(!q) return built;
-        return built.filter(({ data, approversText }) => {
-            const r = data.approvalRequests || {};
-            return [approversText, r.memberName, r.title, r.approvalCode].join(" ").toLowerCase().includes(q);
-        });
-    }, [api, query]);
-    
-    /* 테이블 행 클릭하면 드로어 오픈 */
-    const openDrawer = useCallback((item) => setDrawerData(item), []);
-    const closeDrawer = useCallback(() => setDrawerData(null), []);
+  /* 외부 데이터 인젝(테스트용) */
+  useEffect(() => {
+    window.injectApprovalData = (payload) => {
+      try {
+        const next = payload && payload.result ? payload : { status: 200, message: null, result: Array.isArray(payload) ? payload : [] };
+        setApi(next);
+        setShowSkeleton(false);
+      } catch  {
+        console.error("인젝 실패");
+      }
+    };
+    qRef.current?.focus();
+    return () => { delete window.injectApprovalData; };
+  }, []);
 
-    /* 로그아웃 */
-    const onLogout = useCallback(async () => {
-        await doLogout();
-        navigate("/");
-    }, [navigate]);
+  /* 목록 로드: getAllRequest + getAcceptPost(내 결재 가능 글) */
+  useEffect(() => {
+    let aborted = false;
+    (async () => {
+      try {
+        setShowSkeleton(true);
+        const [allRes, canRes] = await Promise.all([
+          fetchWithAuth(`${API_BASE}/approval/getAllRequest`),
+          fetchWithAuth(`${API_BASE}/approval/getAcceptPost`)
+        ]);
 
-    const approveCurrent = useCallback(async () => {
-        if(!drawerData || !currentUser){
-            showToast("로그인 하세요", true);
-            return;
-        }
-        const r = drawerData.approvalRequests || {};
-        if(r.isCompleted) return;
+        const [allList, canList] = await Promise.all([
+          parseResultJSON(allRes, "목록 불러오기 실패"),
+          parseResultJSON(canRes, "결재권한 목록 불러오기 실패"),
+        ]);
 
-        const canApprove = (drawerData.approvers || []).some(
-            (a) => a.name === currentUser.name || a.studentId === currentUser.studentId
+        // 내가 결재 가능한 postId Set (배열 원소가 숫자 또는 {postId}일 수 있으니 모두 수용)
+        const canIds = new Set(
+          (Array.isArray(canList) ? canList : []).map(x =>
+            (typeof x === "object" ? (x.postId ?? x.id ?? x.requestId) : x)
+          )
         );
-        if (!canApprove){
-            showToast("결재 대상자가 아님", true);
-            return;
-        }
 
-        try {
-            /* 나중에 API 맞춰서 변경 */
-            const res = await fetchWithAuth(`http://localhost:8080/api/approval/postAccept`, {
-                method: "POST",
-                body: JSON.stringify({requestId: r.requestId})
-            });
-            if(!res.ok) throw new Error("승인 실패");
+        const normalized = (Array.isArray(allList) ? allList : [])
+          .map(it => ({
+            postId: it.postId,
+            title: it.title,
+            approvalCode: it.approvalCode,
+            requestDate: it.requestDate,
+            isCompleted: !!it.isCompleted,
+            memberName: it.memberName,
+            requestDetails: it.requestDetails,
+            requestAmount: it.requestAmount,
+            accountNumber: it.accountNumber,
+            payerName: it.payerName,
+            receiptFile: it.receiptFile,
+            approvers: Array.isArray(it.approvers) ? it.approvers.map(a => ({
+              memberId: a.memberId, name: a.name, studentId: a.studentId
+            })) : [],
+            canApprove: canIds.has(it.postId)
+          }));
 
-            /* 로컬 상태 갱신 */
-            setApi((prev) => {
-                const next = {...prev, result: [...(prev.result || [])] };
-                const idx = next.result.findIndex((x) => (x.approvalRequests || {}).requestId === r.requestId);
-                if (idx >= 0){
-                    const item = {...next.result[idx]};
-                    const req = {...(item.approvalRequests || {}) };
-                    req.isCompleted = true;
-                    req.approvalDate = new Date().toISOString();
-                    item.approvalRequests = req;
-                    next.result[idx] = item;
-                }
-                return next;
-            });
-            setDrawerData((prev) => prev ? {...prev, approvalRequests: {...prev.approvalRequests, isCompleted: true, approvalDate: new Date().toISOString() } } : prev);
-            showToast("결재완료");
-        } catch (e) {
-            console.error(e);
-            showToast("오류 발생. 다시 하셈", true);
-        }
-    }, [drawerData, currentUser, showToast]);
+        if (!aborted) setApi({ status: 200, message: null, result: normalized });
+      } catch (e) {
+        console.error(e);
+        showToast(e.message || "목록을 불러오지 못했습니다.", true);
+      } finally {
+        if (!aborted) setShowSkeleton(false);
+      }
+    })();
+    return () => { aborted = true; };
+  }, [showToast]);
 
-    const approveState = useMemo(() => {
-        const r = drawerData?.approvalRequests || {};
-        const canApprove = !!currentUser && (drawerData?.approvers || []).some(
-            (a) => a.name === currentUser.name || a.studentId === currentUser.studentId
-        );
-        return {
-            disabled: !canApprove || r.isCompleted === true,
-            label: r.isCompleted === true ? "승인 완료" : "결재 승인",
-            title: !canApprove ? "결재 대상이 아님." : "",
-            badgeHtml: r.isCompleted === true ? `<span class="${styles.badge} ${styles.ok}">완료</span>` : `<span class="${styles.badge} ${styles.no}">미완료</span>`,
-        };
-    }, [drawerData, currentUser]);
+  /* 검색 rows */
+  const rows = useMemo(() => {
+    const built = (api.result || []).map((x) => ({
+      approversText: (x.approvers || []).map((a) => a.name).join(", "),
+      data: x,
+    }));
+    const q = query.trim().toLowerCase();
+    if(!q) return built;
+    return built.filter(({ data, approversText }) => {
+      return [approversText, data.memberName, data.title, data.approvalCode]
+        .join(" ").toLowerCase().includes(q);
+    });
+  }, [api, query]);
 
-    return (
-        <div className={styles.wrap}>
-            <aside className={styles.sidebar}>
-                <div className={styles.brand}>컴퓨터공학부 종합관리시스템</div>
-                <div className={styles.sectionTitle}>메뉴</div>
-                <nav className={styles.nav}>
-                <Link to="/userpg">마이페이지</Link>
-                <Link to="/">문서 게시판</Link>
-                <Link to="/">이벤트 게시판</Link>
-                <Link to="/approval_req">결재 신청</Link>
-                <Link to="/approval_approved" className={styles.active}>결재</Link>
-                <Link to="/monthly_page">월별 결산</Link>
-                <Link to="/">설정</Link>
-                <Link to="/permission">권한변경</Link>
-                </nav>
-            </aside>
+  /* 드로어 */
+  const openDrawer = useCallback((item) => setDrawerData(item), []);
+  const closeDrawer = useCallback(() => setDrawerData(null), []);
 
-            <main className={styles.main}>
-                <header className={styles.header}>
-                <div>로그인: <b>{currentUser?.name ?? "-"}</b></div>
-                <div style={{display: "flex", gap:8}}>
-                    <button className={styles.logout} onClick={onLogout}>로그아웃</button>
-                </div>
-                </header>
+  /* 로그아웃 */
+  const onLogout = useCallback(async () => {
+    await doLogout();
+    navigate("/");
+  }, [navigate]);
 
-                <div className={styles.content}>
-                <div className={styles.toolbar}>
-                    <input ref={qRef} className={styles.input} placeholder="검색(신청자/건명/코드)" value={query} onChange={(e) => setQuery(e.target.value)}/>
-                    <span className={styles.subtitle}>행을 클릭하면 상세에서 결재 승인할 수 있습니다.</span>
-                </div>
+  /* 승인 */
+  const approvingRef = useRef(false);
+  const approveCurrent = useCallback(async () => {
+    const d = drawerData;
+    if (!d || !currentUser){
+      showToast("로그인 하세요", true);
+      return;
+    }
+    if (d.isCompleted) return;
 
-                <section className={styles.card}>
-                    <table>
-                    <thead>
-                        <tr>
-                        <th style={{width:160}}>결재자</th>
-                        <th style={{width:120}}>신청자</th>
-                        <th style={{width:160}}>요청일</th>
-                        <th>건명</th>
-                        <th style={{width:140}}>코드</th>
-                        <th style={{width:120}}>완료여부</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {showSkeleton && rows.length === 0 ? (
-                            /* 스켈레톤 */
-                            Array.from({length: 5}).map((_, i) => (
-                                <tr key={`sk-${i}`} className={styles.ghost}>
-                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
-                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skNarrow}`} /></td>
-                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
-                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skWide}`} /></td>
-                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
-                                    <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skNarrow}`} /></td>
-                                </tr>
-                            ))
-                        ) : rows.length === 0 ? (
-                            <tr>
-                                <td colSpan={6} className={styles.muted} style ={{textAlign: "center", padding: "16px"}}>
-                                    데이터가 없음
-                                </td>
-                            </tr>
-                        ):(
-                            rows.map((row, idx) => {
-                                const r = row.data.approvalRequests || {};
-                                const done = r.isCompleted === true;
-                                return (
-                                    <tr key={r.requestId ?? idx} onClick={() => openDrawer(row.data)} style = {{ cursor: "pointer"}}>
-                                        <td className={styles.muted}>{escapeHtml(row.approversText || "-")}</td>
-                                        <td>{escapeHtml(r.memberName || "-")}</td>
-                                        <td className={styles.muted}>{r.requestDate ? fmt(r.requestDate) : "-"}</td>
-                                        <td>{escapeHtml(r.title || "-")}</td>
-                                        <td className={styles.muted}>{escapeHtml(r.approvalCode || "-")}</td>
-                                        <td>
-                                            <span className={`${styles.badge} ${done ? styles.ok : styles.no}`}>{done ? "완료":"미완료"}</span>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                    </table>
-                </section>
-                </div>
-            </main>
-
-            {/* <!-- detail drawer --> */}
-            <div className={`${styles.drawer} ${drawerData ? styles.show : ""}`} aria-hidden={drawerData ? "false" : "true"}>
-            <div className={styles.shade} onClick={closeDrawer}></div>
-            <div className={styles.panel} role="dialog" aria-modal="true">
-                <header>
-                <div className={styles.headLeft}>
-                    <strong>결재 상세</strong>
-                    <span id="statusBadge" dangerouslySetInnerHTML={{__html: approveState.badgeHtml}}></span>
-                </div>
-                <div className={styles.headRight}>
-                    <button id="approveBtn" className={`${styles.btn} ${styles.btnApprove}`} onClick={approveCurrent} disabled={approveState.disabled} title={approveState.title}>{approveState.label}</button>
-                    <button className={styles.btn} onClick={closeDrawer}>닫기</button>
-                </div>
-                </header>
-                <div className={styles.body} id="detail">
-                    {drawerData && (
-                        <>
-                        <DetailGrid data={drawerData} />
-                        <Receipt data = {drawerData} />
-                        </>
-                    )}
-                </div>
-            </div>
-            </div>
-
-            <div id="toast" className={`${styles.toast} ${toast.show ? styles.show : ""}`} role="status" aria-live="polite" style={{background: toast.danger ? "#dc2626" : undefined}}>{toast.msg}</div>
-            </div>
+    // 프론트 가드(최종 권한은 서버 검증)
+    const canApprove = d.canApprove || (d.approvers || []).some(
+      (a) => a.name === currentUser.name || a.studentId === currentUser.studentId || a.memberId === currentUser.memberId
     );
+    if (!canApprove){
+      showToast("결재 대상자가 아님", true);
+      return;
+    }
+
+    if (approvingRef.current) return; // 중복 클릭 방지
+    approvingRef.current = true;
+
+    const prevApi = api;
+    try {
+      // 낙관적 업데이트
+      setApi((prev) => {
+        const next = { ...prev, result: [...(prev.result || [])] };
+        const i = next.result.findIndex(x => x.postId === d.postId);
+        if (i >= 0) next.result[i] = { ...next.result[i], isCompleted: true };
+        return next;
+      });
+      setDrawerData((prev) => prev ? { ...prev, isCompleted: true } : prev);
+
+      const res = await fetchWithAuth(`${API_BASE}/approval/postAccept`, {
+        method: "POST",
+        body: JSON.stringify({ postId: d.postId, approved: true })
+      });
+      if (!res.ok) {
+        // 롤백
+        setApi(prevApi);
+        const msg = await res.text().catch(()=> "승인 실패");
+        throw new Error(msg || "승인 실패");
+      }
+
+      showToast("결재완료");
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || "오류 발생. 다시 시도해 주세요.", true);
+    } finally {
+      approvingRef.current = false;
+    }
+  }, [api, drawerData, currentUser, showToast]);
+
+  /* 승인 버튼 상태 */
+  const approveState = useMemo(() => {
+    const d = drawerData || {};
+    const disabled = !currentUser || d.isCompleted === true ||
+      !((d.canApprove) || (d.approvers||[]).some(a =>
+        a.name === currentUser?.name || a.studentId === currentUser?.studentId || a.memberId === currentUser?.memberId
+      ));
+    return {
+      disabled,
+      label: d.isCompleted === true ? "승인 완료" : "결재 승인"
+    };
+  }, [drawerData, currentUser]);
+
+  /* 삭제 */
+  const onDelete = useCallback(async () => {
+    const d = drawerData;
+    if (!d) return;
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/approval/deleteRequest/${encodeURIComponent(d.postId)}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(()=> "삭제 실패");
+        throw new Error(t || "삭제 실패");
+      }
+      setApi(prev => ({ ...prev, result: (prev.result || []).filter(x => x.postId !== d.postId) }));
+      setDrawerData(null);
+      showToast("삭제되었습니다.");
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || "삭제 중 오류가 발생했습니다.", true);
+    }
+  }, [drawerData, showToast]);
+
+  return (
+    <div className={styles.wrap}>
+      <aside className={styles.sidebar}>
+        <div className={styles.brand}>컴퓨터공학부 종합관리시스템</div>
+        <div className={styles.sectionTitle}>메뉴</div>
+        <nav className={styles.nav}>
+          <Link to="/userpg">마이페이지</Link>
+          <Link to="/">문서 게시판</Link>
+          <Link to="/">이벤트 게시판</Link>
+          <Link to="/approval_req">결재 신청</Link>
+          <Link to="/approval_approved" className={styles.active}>결재</Link>
+          <Link to="/monthly_page">월별 결산</Link>
+          <Link to="/">설정</Link>
+          <Link to="/permission">권한변경</Link>
+        </nav>
+      </aside>
+
+      <main className={styles.main}>
+        <header className={styles.header}>
+          <div>로그인: <b>{currentUser?.name ?? "-"}</b></div>
+          <div style={{display: "flex", gap:8}}>
+            <button className={styles.logout} onClick={onLogout}>로그아웃</button>
+          </div>
+        </header>
+
+        <div className={styles.content}>
+          <div className={styles.toolbar}>
+            <input
+              ref={qRef}
+              className={styles.input}
+              placeholder="검색(신청자/건명/코드)"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <span className={styles.subtitle}>행을 클릭하면 상세에서 결재 승인/삭제할 수 있습니다.</span>
+          </div>
+
+          <section className={styles.card}>
+            <table>
+              <thead>
+                <tr>
+                  <th style={{width:160}}>결재자</th>
+                  <th style={{width:120}}>신청자</th>
+                  <th style={{width:160}}>요청일</th>
+                  <th>건명</th>
+                  <th style={{width:140}}>코드</th>
+                  <th style={{width:120}}>완료여부</th>
+                </tr>
+              </thead>
+              <tbody>
+                {showSkeleton && rows.length === 0 ? (
+                  Array.from({length: 5}).map((_, i) => (
+                    <tr key={`sk-${i}`} className={styles.ghost}>
+                      <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
+                      <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skNarrow}`} /></td>
+                      <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
+                      <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skWide}`} /></td>
+                      <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skMid}`} /></td>
+                      <td><div className={`${styles.skeleton} ${styles.skText} ${styles.skNarrow}`} /></td>
+                    </tr>
+                  ))
+                ) : rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className={styles.muted} style ={{textAlign: "center", padding: "16px"}}>
+                      데이터가 없음
+                    </td>
+                  </tr>
+                ):(
+                  rows.map((row, idx) => {
+                    const d = row.data;
+                    return (
+                      <tr key={d.postId ?? idx} onClick={() => openDrawer(d)} style={{ cursor: "pointer"}}>
+                        <td className={styles.muted}>{escapeHtml(row.approversText || "-")}</td>
+                        <td>{escapeHtml(d.memberName || "-")}</td>
+                        <td className={styles.muted}>{d.requestDate ? fmt(d.requestDate) : "-"}</td>
+                        <td>
+                          {d.canApprove && <span className={`${styles.badge} ${styles.info}`} style={{marginRight:6}}>내 결재</span>}
+                          {escapeHtml(d.title || "-")}
+                        </td>
+                        <td className={styles.muted}>{escapeHtml(d.approvalCode || "-")}</td>
+                        <td>
+                          <span className={`${styles.badge} ${d.isCompleted ? styles.ok : styles.no}`}>{d.isCompleted ? "완료":"미완료"}</span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </main>
+
+      {/* detail drawer */}
+      <div className={`${styles.drawer} ${drawerData ? styles.show : ""}`} aria-hidden={drawerData ? "false" : "true"}>
+        <div className={styles.shade} onClick={closeDrawer}></div>
+        <div className={styles.panel} role="dialog" aria-modal="true">
+          <header>
+            <div className={styles.headLeft}>
+              <strong>결재 상세</strong>
+              <span className={`${styles.badge} ${drawerData?.isCompleted ? styles.ok : styles.no}`} style={{marginLeft:8}}>
+                {drawerData?.isCompleted ? "완료" : "미완료"}
+              </span>
+            </div>
+            <div className={styles.headRight}>
+              <button
+                className={`${styles.btn} ${styles.btnApprove}`}
+                onClick={approveCurrent}
+                disabled={approveState.disabled}
+                title={approveState.disabled ? "결재 대상이 아님 또는 이미 완료" : ""}
+              >
+                {approveState.label}
+              </button>
+              <button className={styles.btn} onClick={onDelete}>삭제</button>
+              <button className={styles.btn} onClick={closeDrawer}>닫기</button>
+            </div>
+          </header>
+          <div className={styles.body} id="detail">
+            {drawerData && (
+              <>
+                <DetailGrid data={drawerData} />
+                <Receipt data={drawerData} />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="toast"
+        className={`${styles.toast} ${toast.show ? styles.show : ""}`}
+        role="status"
+        aria-live="polite"
+        style={{background: toast.danger ? "#dc2626" : undefined}}
+      >
+        {toast.msg}
+      </div>
+    </div>
+  );
 }
 
-/* 상세그리드 */
+/* 상세 그리드 (백엔 필드명 사용) */
 function DetailGrid({data}){
-    const r = data.approvalRequests || {};
-    const approversText = (data.approvers || []).map((a) => `${escapeHtml(a.name)} (${escapeHtml(a.studentId)})`).join(", ");
+  const d = data || {};
+  const approversText = (d.approvers || [])
+    .map(a => `${escapeHtml(a.name)} (${escapeHtml(a.studentId ?? a.memberId ?? "-")})`)
+    .join(", ");
 
-    return (
-        <div className={styles.grid}>
-            <div className={styles.k}>결재자</div><div dangerouslySetInnerHTML={{__html: approversText || "-"}} />
-            <div className={styles.k}>신청자</div><div>{escapeHtml(r.memberName || "-")}</div>
-            <div className={styles.k}>요청일</div><div>{r.requestDate ? fmt(r.requestDate) : "-"}</div>
-            <div className={styles.k}>건명</div><div>{escapeHtml(r.title || "-")}</div>
-            <div className={styles.k}>예산코드</div><div>{escapeHtml(r.approvalCode || "-")}</div>
-            <div className={styles.k}>금액</div><div>{money(r.requestedAmount)} 원</div>
-            <div className={styles.k}>계좌번호</div><div>{escapeHtml(r.accountNumber || "-")}</div>
-            <div className={styles.k}>예금주</div><div>{escapeHtml(r.payerName || "-")}</div>
-            <div className={styles.k}>내역</div><div>{escapeHtml(r.requestDetail || "-")}</div>
-            <div className={styles.k}>완료여부</div>
-            <div>
-                {r.isCompleted === true ? <span className={`${styles.badge} ${styles.ok}`}>완료</span> : <span className={`${styles.badge} ${styles.no}`} >미완료</span>}
-            </div>
-        </div>
-    );
+  return (
+    <div className={styles.grid}>
+      <div className={styles.k}>결재자</div><div dangerouslySetInnerHTML={{__html: approversText || "-"}} />
+      <div className={styles.k}>신청자</div><div>{escapeHtml(d.memberName || "-")}</div>
+      <div className={styles.k}>요청일</div><div>{d.requestDate ? fmt(d.requestDate) : "-"}</div>
+      <div className={styles.k}>건명</div><div>{escapeHtml(d.title || "-")}</div>
+      <div className={styles.k}>예산코드</div><div>{escapeHtml(d.approvalCode || "-")}</div>
+      <div className={styles.k}>금액</div><div>{money(d.requestAmount)} 원</div>
+      <div className={styles.k}>계좌번호</div><div>{escapeHtml(d.accountNumber || "-")}</div>
+      <div className={styles.k}>예금주</div><div>{escapeHtml(d.payerName || "-")}</div>
+      <div className={styles.k}>내역</div><div>{escapeHtml(d.requestDetails || "-")}</div>
+      <div className={styles.k}>완료여부</div>
+      <div>
+        {d.isCompleted ? <span className={`${styles.badge} ${styles.ok}`}>완료</span> : <span className={`${styles.badge} ${styles.no}`}>미완료</span>}
+      </div>
+    </div>
+  );
 }
 
-/* 영수증 이미지 */
+/* 영수증 */
 function Receipt({data}) {
-    const r = data.approvalRequests || {};
-    const imgSrc = toSrc(r.receiptFile || data.byteFile);
-    return (
-        <div className={styles.imgbox}>
-            {imgSrc ? <img alt="receipt" src={imgSrc} /> : <div className={styles.muted}>영수증 이미지 없음</div>}
-        </div>
-    );
+  const imgSrc = toSrc(data?.receiptFile);
+  return (
+    <div className={styles.imgbox}>
+      {imgSrc ? (
+        <>
+          <img alt="receipt" src={imgSrc} />
+          <a className={styles.link} href={imgSrc} download={`receipt_${data?.postId}.jpg`}>다운로드</a>
+        </>
+      ) : <div className={styles.muted}>영수증 이미지 없음</div>}
+    </div>
+  );
 }
 
 export default ApprovalApproved;
