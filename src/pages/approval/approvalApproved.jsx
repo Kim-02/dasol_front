@@ -4,6 +4,7 @@ import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
 import styles from "./approvalPage.module.css";
 
 const API_BASE = "http://localhost:8080/api";
+const API_BASE_SV = "http://3.34.245.155/api"
 
 /* ====== 유틸 ====== */
 const fmt = (dt) => new Intl.DateTimeFormat("ko-KR", {
@@ -102,7 +103,7 @@ function ApprovalApproved(){
       try {
         setShowSkeleton(true);
         const [allRes, canRes] = await Promise.all([
-          fetchWithAuth(`${API_BASE}/approval/getAllRequest`),
+          fetchWithAuth(`${API_BASE_SV}/approval/getAllRequest`),
           fetchWithAuth(`${API_BASE}/approval/getAcceptPost`)
         ]);
 

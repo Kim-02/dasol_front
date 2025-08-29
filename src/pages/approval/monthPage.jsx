@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
 import styles from "./monthly.module.css";
 
-const API_BASE_URL_MON = 'http://localhost:8080/api';
+const API_BASE_SV = 'http://3.34.245.155/api';
 
 /* 헬퍼 */
 const yyyymm = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -33,8 +33,13 @@ const toSrc = (raw) => {
     return `data:${detectMine(b)};base64,${b}`;
 }
 
-function CoverPage({ym}){
+// "2025-06" → { year: 2025, month: 6 }
+const parseYearMonth = (ymStr) => {
+  const [y, m] = String(ymStr).split("-").map(Number);
+  return { year: y, month: m };
+};
 
+function CoverPage({ym}){
     return(
         <section className={styles.page}>
             <div className={styles.cover}>
@@ -131,10 +136,11 @@ function MonthPage(){
                 setError("");
                 setFetching(true);
                 /* 추후 실제 경로에 따라 변경 필요함 */
-                const url = `${API_BASE_URL_MON}/monthly?ym=${encodeURIComponent(month)}`;
+                const {year, month: mon} = parseYearMonth(month);
 
-                const res = await fetchWithAuth(url, {
-                    method: "GET",
+                const res = await fetchWithAuth(`${API_BASE_SV}/approval/getMonthlyRequest`, {
+                    method: "POST",
+                    body: JSON.stringify({year, month: mon})
                 });
 
                 if(!res.ok){
@@ -144,7 +150,14 @@ function MonthPage(){
 
                 const json = await res.json();
                 /* response에 맞춰서 파싱 */
-                const arr = json?.result?.approvalRequests || json?.approvalRequests || json?.result || [];
+                let arr = json?.result?.approvalRequests || json?.approvalRequests || json?.result || json || [];
+                if (!Array.isArray(arr)) arr = [];
+
+                arr = arr.map(it => ({
+                    ...it,
+                    requestedAmount: it.requestedAmount ?? it.requestAmount ?? 0
+                }));
+
                 if(alive) setRequests(arr);
             } catch (e) {
                 if (alive) setError(e.message || "데이터 로드 실패");
@@ -168,15 +181,16 @@ function MonthPage(){
         navigate("/");
     }, [navigate]);
 
-    /* 선택 달의 데이터 정렬 후 쌍으로 묶기 */
     const pairs = useMemo(() => {
-        const inMonth = (requests || []).filter((r) => yyyymm(new Date(r.requestDate)) === month).sort((a, b) => new Date(a.requestDate) - new Date(b.requestDate))
+        const inMonth = (requests || []).slice().sort(
+        (a, b) => new Date(a.requestDate) - new Date(b.requestDate)
+        );
         const out = [];
         for (let i = 0; i < inMonth.length; i+=2){
-            out.push([inMonth[i], inMonth[i+1] || null]);
+        out.push([inMonth[i], inMonth[i+1] || null]);
         }
         return out;
-    }, [requests, month]);
+    }, [requests]);
 
     return(
         <div className={styles.wrap}>
@@ -228,7 +242,7 @@ function MonthPage(){
                                 <div>
                                     <h1>월별 결산</h1>
                                     <div className={styles.m}>{month.replace("-", "년 ")}월</div>
-                                    <p className={styles.subtitle}>해당 월 데이터가 없스빈다.</p>
+                                    <p className={styles.subtitle}>해당 월 데이터가 없습니다.</p>
                                 </div>
                             </div>
                         </section>
