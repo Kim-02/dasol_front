@@ -73,6 +73,8 @@ function ApprovalRequestPage(){
     const [requestedAmount, setRequestedAmount] = useState("");
     const [approvalCode, setApprovalCode] = useState("");
     const [payerName, setPayerName] = useState("");
+    const [receiptFile, setReceiptFile] = useState(null);
+    const receiptInputRef = useRef(null);
 
     /* 승인자 */
     const [selected, setSelected] = useState(() => new Map());
@@ -126,20 +128,6 @@ function ApprovalRequestPage(){
     /* 선택된 승인자 ID */
     const approverIds = useMemo(() => Array.from(selected.keys()), [selected]);
 
-    /* 미리보기 페이로드 콘솔 확인용으로 */
-    const preview = useMemo(() => {
-        return {
-            title: title.trim(),
-            accountNumber: accountNumber.trim(),
-            requestDate: fmtDateYYYYMMDD(requestDate),
-            requestDetail: requestDetail.trim(),
-            requestedAmount: Number(requestedAmount || 0),
-            approvalCode,
-            payerName: payerName.trim(),
-            approverIds,
-        };
-    }, [title, accountNumber, requestDate, requestDetail, requestedAmount, approvalCode, payerName, approverIds]);
-
     const onLogout = useCallback(async () => {
         await doLogout();
         navigate("/");
@@ -184,38 +172,60 @@ function ApprovalRequestPage(){
 
     const clearPerson = useCallback(() => setSelected(new Map()), []);
 
+    const toLocalIso = (yyyyMmDd) => {
+        const [y, m, d] = yyyyMmDd.split("-").map(Number);
+        const dt = new Date(y, (m - 1), d, 0, 0, 0, 0);
+        return dt.toISOString();
+    };
+
     /* 제출 함수 */
     const handleSubmit = useCallback(
         async (e) => {
             e.preventDefault();
             if(approverIds.length === 0){
-                alert("승인자를 1명 이상 선택해");
+                alert("승인자를 1명 이상 선택하세요");
                 openDrawer();
                 return;
             }
-            /* 실제 API 나오면 변경
-            const res = await fetchWithAuth(`/api/approval/post`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  accountNumber,
-                  receiptFile: "", // 파일 업로드 연결 시 교체
-                  requestDate: new Date(requestDate).toISOString(),
-                  requestDetails: requestDetail,
-                  requestAmount: Number(requestedAmount||0),
-                  title,
-                  approvalCode,
-                  studentId: user?.studentId ?? "",
-                  payerName,
-                  approversId: approverIds.map(String)
-                })
-            });
-            const json = await res.json();
-            */           
+            if (!receiptFile) {
+                alert("영수증 이미지를 첨부하세용");
+                return;
+            }
+            try {
+                const isoDate = toLocalIso(requestDate);
 
-            console.log("submit payloads:", preview);
-            alert("전송 페이로드 콘솔에서 확인")
-        },[approverIds.length, openDrawer, preview/* , accountNumber, requestDate, requestDetail, requestedAmount, title, approvalCode, user?.studentId, payerName */]
+                const fd = new FormData();
+                fd.append("accountNumber", accountNumber.trim());
+                fd.append("receiptFile", receiptFile);
+                fd.append("requestDate", isoDate);
+                fd.append("requestDetails", requestDetail.trim());
+                fd.append("requestAmount", String(Number(requestedAmount || 0)));
+                fd.append("title", title.trim());
+                fd.append("approvalCode", String(approvalCode));
+                fd.append("studentId", String(user?.studentId ?? ""));
+                fd.append("payerName", payerName.trim());
+
+                approverIds.forEach((id) => fd.append("approversId", String(id)));
+
+                const res = await fetchWithAuth(`${API_BASE}/approval/post`, {
+                    method: "POST",
+                    body: fd,
+                });
+
+                if(!res.ok){
+                    const t = await res.text().catch(() => "");
+                    throw new Error(t || "결재 신청 실패");
+                }
+
+                const json = await res.json().catch(() => ({}));
+                console.log("결재 신청 결과", json);
+                alert("결재 신청이 완료되었습니다.");
+                navigate("/approval_approved");
+            } catch(err){
+                console.error(err);
+                alert(err.message || "요청 중 오류가 발생했습니다.")
+            }
+        },[navigate, approverIds, receiptFile, accountNumber, requestDate, requestDetail, requestedAmount, title, approvalCode, user?.studentId, payerName, openDrawer]
     );
 
     /* 부서/루트 렌더 유틸함수 */
@@ -281,21 +291,24 @@ function ApprovalRequestPage(){
                         <span className={styles.muted}></span>
                         </div>
 
+                        <label className={styles.label} htmlFor="receiptFile">영수증 이미지</label>
+                        <input id="receiptFile" ref={receiptInputRef} className={styles.input} type="file" accept=".jpg,.png,.jpeg" required onChange={(e) => {const f = e.target.files?.[0] ?? null; setReceiptFile(f);}} />
+
                         <label className={styles.label} htmlFor="approvalCode">코드</label>
                         <select id="approvalCode" className={styles.select} required value={approvalCode} onChange={(e)=>setApprovalCode(e.target.value)}>
                         <option value="" disabled>선택하세요</option>
-                        <option value="210 사무용품비">210 사무용품비</option>
-                        <option value="220 출장비">220 출장비</option>
-                        <option value="230 업무추진비">230 업무추진비</option>
-                        <option value="240 부서별활동비">240 부서별활동비</option>
-                        <option value="310 정기사업비">310 정기사업비</option>
-                        <option value="320 공약사업비">320 공약사업비</option>
-                        <option value="330 대규모사업비">330 대규모사업비</option>
-                        <option value="510 활동지원비">510 활동지원비</option>
-                        <option value="530 학생지원비">530 학생지원비</option>
-                        <option value="610 환불금">610 환불금</option>
-                        <option value="620 비상금">620 비상금</option>
-                        <option value="710 수수료">710 수수료</option>
+                        <option value="210">210 사무용품비</option>
+                        <option value="220">220 출장비</option>
+                        <option value="230">230 업무추진비</option>
+                        <option value="240">240 부서별활동비</option>
+                        <option value="310">310 정기사업비</option>
+                        <option value="320">320 공약사업비</option>
+                        <option value="330">330 대규모사업비</option>
+                        <option value="510">510 활동지원비</option>
+                        <option value="530">530 학생지원비</option>
+                        <option value="610">610 환불금</option>
+                        <option value="620">620 비상금</option>
+                        <option value="710">710 수수료</option>
                         </select>
 
                         <label className={styles.label} htmlFor="payerName">입금자명</label>
@@ -329,6 +342,8 @@ function ApprovalRequestPage(){
                             setTitle(""); setAccountNumber(""); setRequestDetail("");
                             setRequestedAmount(""); setApprovalCode(""); setPayerName("");
                             setSelected(new Map()); setRequestDate(fmtDateYYYYMMDD(new Date()));
+                            setOrgFilter(""); setReceiptFile(null);
+                            if (receiptInputRef.current) receiptInputRef.current.value = "";
                         }}>초기화</button>
                         </div>
                     </form>
