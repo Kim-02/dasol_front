@@ -320,7 +320,6 @@ function ApprovalRequestPage(){
                         <div className={styles.row}>
                         <button type="button" className={styles.btn} onClick={openDrawer}>조직도에서 선택</button>
                         <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={clearPerson}>전체 해제</button>
-                        <span className={styles.hint}>선택된 사람은 아래 칩에서 제거할 수 있습니다. (ID는 화면에 노출되지 않음)</span>
                         </div>
 
                         <div className={`${styles.label} ${styles["sr-only"]}`}>제출</div>
