@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
 import styles from "./permission.module.css";
 
-const API_BASE = "http://localhost:8080/api";
+const API_BASE = "http://3.34.245.155/api";
 
 function colorBar(idx){
   const colors = ["var(--barA)","var(--barB)","var(--barC)","var(--barD)"];

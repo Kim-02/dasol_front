@@ -3,6 +3,8 @@ import styles from "./signup.module.css"
 import {Link, useNavigate} from "react-router-dom";
 import { fetchWithAuth } from "../../utils/auth";
 
+const API_BASE = "http://3.34.245.155/api";
+
 function Signup(){
     const navigate = useNavigate();
     const [form, setForm] = useState({
@@ -115,7 +117,7 @@ function Signup(){
             return;
         }
         /* TODO 실제 메일 전송 API */
-        await fetchWithAuth (`http://localhost:8080/api/auth/verify`, {
+        await fetchWithAuth (`${API_BASE}/auth/verify`, {
             method: 'POST',
             body: JSON.stringify({email: form.email})
         });
@@ -170,7 +172,7 @@ function Signup(){
         setSubmitting(true);
         try{
             /* TODO: 실제 가입 API */
-            const res = await fetch(`http://localhost:8080/api/auth/signup`, {
+            const res = await fetch(`${API_BASE}/auth/signup`, {
                 method: 'POST',
                 body: JSON.stringify(payload)});
                 if (!res.ok) throw new Error('가입 실패');

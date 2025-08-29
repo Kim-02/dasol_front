@@ -3,6 +3,7 @@ import {Link, useNavigate} from "react-router-dom";
 import styles from "./login.module.css"
 import { fetchWithAuth } from "../../utils/auth";
 
+const API_BASE = "http://3.34.245.155/api";
 function Login(){
     const navigate = useNavigate();
     const [form, setForm] = useState({
@@ -54,7 +55,7 @@ function Login(){
         if (btn) {btn.textContent = "처리 중..."; btn.disabled = true;}
 
         try {
-            const res = await fetchWithAuth(`http://localhost:8080/api/auth/login`, {
+            const res = await fetchWithAuth(`${API_BASE}/auth/login`, {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
