@@ -12,7 +12,7 @@ const fmt = (dt) => new Intl.DateTimeFormat("ko-KR", {
 }).format(new Date(dt));
 const money = (n) => Number(n || 0).toLocaleString("ko-KR");
 const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g,
-  (m) => ({"&":"&amp;","<":"&lt;",">;":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  (m) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
 /** result 처리 함수 수정 */
 const parseResultJSON = async (res, errMsg = "API 호출 실패") => {
@@ -142,15 +142,15 @@ function ApprovalApproved(){
             requestDate: ar.requestDate ?? ar.createdAt ?? null,
             isCompleted: !!ar.isCompleted,
             memberName: ar.memberName,
-            requestDetails: ar.requestDetails,
-            requestAmount: ar.requestAmount,
+            requestDetails: ar.requestDetail ?? ar.requestDetails,
+            requestAmount: ar.requestedAmount ?? ar.requestAmount,
             accountNumber: ar.accountNumber,
             payerName: ar.payerName,
             receiptFile: it.byteFile ?? ar.receiptFile ?? "",
             approvers: Array.isArray(it.approvers) ? it.approvers.map(a => ({
               memberId: a.memberId ?? a.id, name: a.name, studentId: a.studentId
             })) : [],
-            canApprove: canIds.has(it.postId)
+            canApprove: canIds.has(postId)
           }});
 
         if (!aborted) setApi({ status: 200, message: null, result: normalized });
