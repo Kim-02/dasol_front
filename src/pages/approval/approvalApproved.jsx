@@ -12,7 +12,7 @@ const fmt = (dt) => new Intl.DateTimeFormat("ko-KR", {
 }).format(new Date(dt));
 const money = (n) => Number(n || 0).toLocaleString("ko-KR");
 const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g,
-  (m) => ({"&":"&amp;","<":"&lt;","&>;":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  (m) => ({"&":"&amp;","<":"&lt;",">;":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
 /** result 처리 함수 수정 */
 const parseResultJSON = async (res, errMsg = "API 호출 실패") => {
@@ -130,23 +130,28 @@ function ApprovalApproved(){
         );
 
         const normalized = (Array.isArray(allList) ? allList : [])
-          .map(it => ({
-            postId: it.postId,
-            title: it.title,
-            approvalCode: it.approvalCode,
-            requestDate: it.requestDate,
-            isCompleted: !!it.isCompleted,
-            memberName: it.memberName,
-            requestDetails: it.requestDetails,
-            requestAmount: it.requestAmount,
-            accountNumber: it.accountNumber,
-            payerName: it.payerName,
-            receiptFile: it.receiptFile,
+          .map(it => {
+
+            const ar = it.approvalRequests ?? {};
+            const postId = ar.requestId ?? it.postId ?? it.id;
+
+            return{
+            postId,
+            title: ar.title,
+            approvalCode: ar.approvalCode,
+            requestDate: ar.requestDate ?? ar.createdAt ?? null,
+            isCompleted: !!ar.isCompleted,
+            memberName: ar.memberName,
+            requestDetails: ar.requestDetails,
+            requestAmount: ar.requestAmount,
+            accountNumber: ar.accountNumber,
+            payerName: ar.payerName,
+            receiptFile: it.byteFile ?? ar.receiptFile ?? "",
             approvers: Array.isArray(it.approvers) ? it.approvers.map(a => ({
-              memberId: a.memberId, name: a.name, studentId: a.studentId
+              memberId: a.memberId ?? a.id, name: a.name, studentId: a.studentId
             })) : [],
             canApprove: canIds.has(it.postId)
-          }));
+          }});
 
         if (!aborted) setApi({ status: 200, message: null, result: normalized });
       } catch (e) {
