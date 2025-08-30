@@ -12,24 +12,35 @@ const fmt = (dt) => new Intl.DateTimeFormat("ko-KR", {
 }).format(new Date(dt));
 const money = (n) => Number(n || 0).toLocaleString("ko-KR");
 const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g,
-  (m) => ({"&":"&amp;","<":"&lt;","&gt;":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  (m) => ({"&":"&amp;","<":"&lt;","&>;":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
-/** result가 "항상 문자열"이라는 전제의 안전 파서 */
+/** result 처리 함수 수정 */
 const parseResultJSON = async (res, errMsg = "API 호출 실패") => {
   if (!res.ok) {
     const t = await res.text().catch(()=> "");
     throw new Error(t || errMsg);
   }
   const body = await res.json().catch(()=> ({}));
-  const raw = body?.result;
-  if (typeof raw !== "string") {
-    throw new Error("서버 result 타입이 문자열이 아닙니다.");
+
+  const raw = Object.prototype.hasOwnProperty.call(body, "result") ? body.result : body;
+
+  if (raw == null){
+    throw new Error("서버 result가 비어 있음.");
   }
-  try {
-    return JSON.parse(raw); // JSON 문자열(배열/객체 등) 이어야 함
-  } catch {
-    throw new Error("서버 result JSON 파싱 실패");
+
+  if (typeof raw === "string"){
+    try {
+        return JSON.parse(raw);
+    } catch {
+        throw new Error("서버 result JSON 파싱 실패");
+    }
   }
+
+  if (typeof raw === "object"){
+    return raw;
+  }
+
+  throw new Error("지원하지 않는 result 타입");
 };
 
 const detectMime = (b64) => {
