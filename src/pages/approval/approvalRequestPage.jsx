@@ -172,10 +172,9 @@ function ApprovalRequestPage(){
 
     const clearPerson = useCallback(() => setSelected(new Map()), []);
 
-    const toLocalIso = (yyyyMmDd) => {
-        const [y, m, d] = yyyyMmDd.split("-").map(Number);
-        const dt = new Date(y, (m - 1), d, 0, 0, 0, 0);
-        return dt.toISOString();
+    const toLocalDateTime = (yyyyMmDd) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyyMmDd)) return null;
+        return `${yyyyMmDd}T00:00:00`;
     };
 
     /* 제출 함수 */
@@ -192,7 +191,7 @@ function ApprovalRequestPage(){
                 return;
             }
             try {
-                const isoDate = toLocalIso(requestDate);
+                const isoDate = toLocalDateTime(requestDate);
 
                 const fd = new FormData();
                 fd.append("accountNumber", accountNumber.trim());

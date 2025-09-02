@@ -58,3 +58,52 @@ tbody tr:hover{background:#f9fafb}
 /* toast */
 .toast{position:fixed; right:16px; bottom:16px; background:#111; color:#fff; padding:10px 12px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,.25); opacity:0; transform:translateY(8px); transition:.25s}
 .toast.show{opacity:1; transform:translateY(0)}
+
+/* 다운로드 a링크를 버튼처럼 */
+.dlLink {
+  --g1: #4f46e5; /* indigo */
+  --g2: #06b6d4; /* cyan */
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  background: linear-gradient(135deg, var(--g1), var(--g2));
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: .2px;
+  box-shadow:
+    0 6px 16px rgba(79,70,229,.35),
+    inset 0 0 0 1px rgba(255,255,255,.15);
+  transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+.dlLink:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 22px rgba(6,182,212,.35),
+    inset 0 0 0 1px rgba(255,255,255,.2);
+}
+
+.dlLink:active {
+  transform: translateY(0);
+  filter: saturate(1.12);
+}
+
+.dlLink:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(59,130,246,.45),
+    0 6px 16px rgba(79,70,229,.35),
+    inset 0 0 0 1px rgba(255,255,255,.25);
+}
+
+/* 아이콘 */
+.dlIcon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.25));
+}

@@ -450,7 +450,14 @@ function Receipt({data}) {
       {imgSrc ? (
         <>
           <img alt="receipt" src={imgSrc} />
-          <a className={styles.link} href={imgSrc} download={`receipt_${data?.postId}.jpg`}>다운로드</a>
+          <a className={`{styles.link} ${styles.dlLink}`} href={imgSrc} download={`receipt_${data?.postId}.jpg`}>다운로드</a>
+            <svg className={styles.dlIcon} viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                d="M12 3v10m0 0l4-4m-4 4l-4-4M5 21h14a2 2 0 002-2v-3M3 16v3a2 2 0 002 2"
+                fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round"
+                />
+            </svg>
         </>
       ) : <div className={styles.muted}>영수증 이미지 없음</div>}
     </div>
