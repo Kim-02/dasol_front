@@ -9,6 +9,8 @@ import UserPg from './pages/user/userpg';
 import Signup from './pages/signup/signup';
 import Login from './pages/login/login';
 import MainPage from './pages/dasolmain/mainPage';
+import DocumentBoard from './pages/board/documentBoard';
+import EventBoard from './pages/board/eventBoard';
 
 
 function App() {
@@ -24,6 +26,9 @@ function App() {
         <Route path="/approval_req" element={<ApprovalRequestPage />} />
         <Route path="/monthly_page" element={<MonthPage />} />
         <Route path="/permission" element={<PermissionPage />} />
+
+        <Route path="/document_board" element={<DocumentBoard />} />
+        <Route path="/event_board" element={<EventBoard />} />
         
       </Routes>
     </BrowserRouter>

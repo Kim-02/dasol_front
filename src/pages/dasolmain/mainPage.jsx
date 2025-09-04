@@ -7,18 +7,6 @@ function MainPage(){
     const [user, setUser] = useState("null");
     const navigate = useNavigate();
 
-/*     useEffect(() => {
-        // 페이지 로드 시 정보 가져옴
-        loadUserInfo()
-        .then(result => {
-            if (!result) throw new Error("사용자 정보 없음");
-            setUserInfo(`${result.name || '이름 없음'} (${result.studentId || '학번 없음'})`)
-        })
-        .catch(err => {
-            alert("로그인이 필요함");
-            navigate('/');
-        });
-    }, []); */
     useEffect(() => {
         (async () => {
             try{
@@ -43,8 +31,8 @@ function MainPage(){
             <div className={styles["section-title"]}>메뉴</div>
             <nav className={styles.nav}>
                 <Link to="/userpg">마이페이지</Link>
-                <Link to="/">문서 게시판</Link>
-                <Link to="/">이벤트 게시판</Link>
+                <Link to="/document_board">문서 게시판</Link>
+                <Link to="/event_board">이벤트 게시판</Link>
                 <Link to="/approval_req">결재 신청</Link>
                 <Link to="/approval_approved">결재</Link>
                 <Link to="/monthly_page">월별 결산</Link>

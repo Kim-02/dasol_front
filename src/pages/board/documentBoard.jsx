@@ -1,200 +1,62 @@
-import React,{ useState, useEffect } from "react";
-import './documentBoard.css'
-import { loadUserInfo } from "../../utils/auth";
+import React,{ useState, useEffect, useCallback } from "react";
+import styles from './documentBoard.module.css'
+import { loadUserInfo, doLogout } from "../../utils/auth";
 import { useNavigate, Link} from "react-router-dom";
-import { handleLogout, toggleDropdown, loadPosts, handleView, handleSave, handleInputChange, cancelEdit} from "../../utils/boardUtils";
-
 
 function DocumentBoard(){
-    const [userInfo, setUserInfo] = useState("로딩 중...");
-    const [dropdownboard, setDropdownBoard] = useState(false);
-    const [dropdownApproval, setDropdownApproval] = useState(false);
-    const [searchPosts, setSearchPosts] = useState("");
+
+    const [currentUser, setCurrentUser] = useState(null);
     const navigate = useNavigate();
 
-    const [posts, setPosts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [viewPost, setViewPost] = useState(null);
-    const [editMode, setEditMode] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-
-    const filterPosts = posts.filter(post => post.title.toLowerCase().includes(searchPosts.toLowerCase()) || post.content?.toLowerCase().includes(searchPosts.toLowerCase()));
-
+    /* 유저정보 로드 */
     useEffect(() => {
-        // 페이지 로드 시 정보 가져옴
-        loadUserInfo()
-        .then(result => {
-            if (!result) throw new Error("사용자 정보 없음");
-            setUserInfo(`${result.name || '이름 없음'} (${result.studentId || '학번 없음'})`);
-        })
-        .catch(err => {
-            alert("로그인이 필요함");
-            /* navigate('/'); */
-        });
-
-        loadPosts(setLoading, setPosts);
+      (async () => {
+        try{
+          const i = await loadUserInfo();
+          setCurrentUser(i);
+        } catch (e) {
+          console.error(e);
+        }
+      })();
     }, []);
+
+    /* 로그아웃 */
+    const onLogout = useCallback(async () => {
+      await doLogout();
+      navigate("/");
+    }, [navigate]);
     
 
     return(
-        <div className="main-wrapper">
-            {/*사이드바*/}
-            <nav className="sidebar">
-                <ul>
-                <li><Link to="/main" className="sidebar-link">대시보드</Link></li>
-
-                {/* 게시판 드롭다운 */}
-                <li className="dropdown">
-                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownBoard)}>게시판 <span className="arrow">
-                        {dropdownboard ? "▲" : "▼"}</span>
-                    </div>
-                    {dropdownboard && (
-                        <ul className={`dropdown-menu ${dropdownboard ? 'show' : ''}`}>
-                            <li><Link to="/document_board">문서게시판</Link></li>
-                            <li><Link to="/event_board">이벤트게시판</Link></li>
-                            <li><Link to="/inquiry_board.html">문의게시판</Link></li>
-                        </ul>
-                    )}
-                </li>
-                <li className="dropdown">
-                    <div className="dropdown-toggle" onClick={() => toggleDropdown(setDropdownApproval)}>결재<span className="arrow">
-                        {dropdownApproval ? "▲" : "▼"}</span>
-                    </div>
-                    {dropdownApproval && (
-                        <ul className={`dropdown-menu ${dropdownApproval ? 'show' : ''}`}>
-                            <li><Link to="/approval_request" className="sidebar-link">결재 신청</Link></li>
-                            <li><Link to="/approval_process" className="sidebar-link">결재 처리</Link></li>
-                        </ul>
-                    )}
-                </li>
-                <li><Link to="/monthly_summary" className="sidebar-link">월별 결산</Link></li>
-                <li><Link to="/" className="sidebar-link">설정</Link></li>
-                </ul>
+        <div className={styles.wrap}>
+        <aside className={styles.sidebar}>
+            <div className={styles.brand}>컴퓨터공학부 종합관리시스템</div>
+            <div className={styles.sectionTitle}>메뉴</div>
+            <nav className={styles.nav}>
+            <Link to="/userpg">마이페이지</Link>
+            <Link to="/document_board" className={styles.active}>문서 게시판</Link>
+            <Link to="/event_board">이벤트 게시판</Link>
+            <Link to="/approval_req">결재 신청</Link>
+            <Link to="/approval_approved">결재</Link>
+            <Link to="/monthly_page">월별 결산</Link>
+            <Link to="/">설정</Link>
+            <Link to="/permission">권한변경</Link>
             </nav>
+        </aside>
 
-            {/* 메인 영역 */}
-            <div className="main">
-                {/* 헤더: 우측 상단 사용자 정보 */}
-                <header className="header">
-                {/* auth.js가 자동으로 이 요소를 채웁니다 */}
-                <div className="user-info" style={{cursor: "pointer"}} onClick={() => navigate("/user")}>
-                    {userInfo}
-                </div>
-                <button id="logoutBtn" className="logout-btn" onClick={() => handleLogout(navigate)}>로그아웃</button>
-                </header>
-
-                {/* 본문: 게시판 내용 */}
-                <section className="content">
-                    <div className="board-header">
-                        <h1>문서게시판</h1>
-                        <button className="btn-create" onClick={() => navigate('/document_create')}>새 문서 작성</button>
-                    </div>
-
-                <div className="search-section">
-                    <div className="search-box">
-                    <input type="text" id="searchInput" value={searchPosts} onChange={(e) => setSearchPosts(e.target.value)} placeholder="제목 또는 내용으로 검색..."></input>
-                    <button className="btn-search" onClick={() => {if (!searchPosts.trim()){alert("검색어를 입력하세요.")}}}>검색</button>
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="loading">게시글을 불러오는 중...</div>
-                ):(
-                    <div className="posts-container">
-                        <div className="posts-header">
-                        <div className="col-title">제목</div>
-                        <div className="col-author">작성자</div>
-                        <div className="col-capacity">인원</div>
-                        <div className="col-target">대상</div>
-                        <div className="col-startdate">시작일시</div>
-                        <div className="col-enddate">종료일시</div>
-                    </div>
-                    <div id="postsList" className="posts-list">
-                        {filterPosts.length === 0 ? (
-                            <div className="no-data">{searchPosts.trim() ? "검색 결과 없음" : "등록된 문서 없음"}</div>
-                        ) : filterPosts.map(post => (
-                            <div className="post-row" key={post.id} onClick={() => handleView(post.id, setViewPost, setEditMode, setShowModal)}>
-                                <div className="col-title">{post.title}</div>
-                                <div className="col-author">{post.memberName}</div>
-                                <div className="col-capacity">{post.capacity}</div>
-                                <div className="col-target">{post.target}</div>
-                                <div className="col-startdate">{new Date(post.startDate).toLocaleString()}</div>
-                                <div className="col-enddate">{new Date(post.endDate).toLocaleString()}</div>
-                            </div>
-                        ))}
-                        </div>
-                    </div>
-                )}
-            </section>
-
-            {showModal && viewPost &&(
-                <div className="modal">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h2>{editMode ? '수정' : '상세 보기'}</h2>
-                            <span className="close" onClick={() => setShowModal(false)}>&times;</span>
-                        </div>
-                        <div className="modal-body">
-                            {!editMode ? (
-                                <div>
-                                    <p><strong>작성자:</strong> {viewPost.memberName}</p>
-                                    <p><strong>인원:</strong> {viewPost.capacity}</p>
-                                    <p><strong>대상:</strong> {viewPost.target}</p>
-                                    <p><strong>내용:</strong> {viewPost.content}</p>
-                                    <p><strong>시작일시:</strong> {new Date(viewPost.startDate).toLocaleString()}</p>
-                                    <p><strong>종료일시:</strong> {new Date(viewPost.endDate).toLocaleString()}</p>
-                                    <p><strong>파일경로:</strong> {viewPost.filePath}</p>
-                                    <p><strong>실제위치:</strong> {viewPost.realLocation}</p>
-
-                                    <div className="modal-footer">
-                                        <button className="btn-edit" onClick={() => setEditMode(true)}>수정</button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <form>
-                                    <div className="form-group">
-                                        <label>제목</label>
-                                        <input type="text" name="title" value={viewPost.title} onChange={(e) => handleInputChange(e, setViewPost)} required/>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>내용</label>
-                                        <textarea name="content" value={viewPost.content} onChange={(e) => handleInputChange(e, setViewPost)} rows="4" required></textarea>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>시작일시</label>
-                                        <input type="datetime-local" name="startDate" value={viewPost.startDate ? viewPost.startDate.slice(0, 16) : ''} onChange={(e) => handleInputChange(e, setViewPost)} required/>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>종료일시</label>
-                                        <input type="datetime-local" name="endDate" value={viewPost.endDate ? viewPost.endDate.slice(0, 16) : ''} onChange={(e) => handleInputChange(e, setViewPost)} required/>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>대상</label>
-                                        <input type="text" name="target" value={viewPost.target} onChange={(e) => handleInputChange(e, setViewPost)} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>인원</label>
-                                        <input type="number" name="capacity" value={viewPost.capacity} onChange={(e) => handleInputChange(e, setViewPost)} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>파일경로</label>
-                                        <input type="text" name="filePath" value={viewPost.filePath} onChange={(e) => handleInputChange(e, setViewPost)} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>실제위치</label>
-                                        <input type="text" name="realLocation" value={viewPost.realLocation} onChange={(e) => handleInputChange(e, setViewPost)} />
-                                    </div>
-                                    <div className="form-action">
-                                        <button type="button" className="btn-cancel" onClick={() => cancelEdit(setEditMode)}>취소</button>
-                                        <button type="button" className="btn-submit" onClick={() => handleSave(viewPost, setShowModal, setViewPost, setLoading, setPosts)}>저장</button>
-                                    </div>
-                                </form>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+        <main className={styles.main}>
+            <header className={styles.header}>
+            <div>로그인: <b>{currentUser?.name ?? "-"}</b></div>
+            <div style={{display: "flex", gap:8}}>
+                <button className={styles.logout} onClick={onLogout}>로그아웃</button>
             </div>
+            </header>
+
+            <div className={styles.content}>
+                <h1>공사중</h1>
+            </div>
+
+        </main>
         </div>
     );
 }

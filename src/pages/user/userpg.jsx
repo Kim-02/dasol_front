@@ -197,8 +197,8 @@ function UserPg(){
         <div className={styles.sectionTitle}>메뉴</div>
         <nav className={styles.nav}>
           <Link to="/userpg" className={styles.active}>마이페이지</Link>
-          <Link to="/">문서 게시판</Link>
-          <Link to="/">이벤트 게시판</Link>
+          <Link to="/document_board">문서 게시판</Link>
+          <Link to="/event_board">이벤트 게시판</Link>
           <Link to="/approval_req">결재 신청</Link>
           <Link to="/approval_approved">결재</Link>
           <Link to="/monthly_page">월별 결산</Link>
