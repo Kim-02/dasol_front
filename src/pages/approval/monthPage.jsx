@@ -5,14 +5,36 @@ import styles from "./monthly.module.css";
 
 const API_BASE_SV = 'http://3.34.245.155/api';
 
-/* 헬퍼 */
-const yyyymm = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+// 0) 안전 파서
+const toDate = (v) => {
+  if (v == null) return null;
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  if (typeof v === "number") { const d = new Date(v); return isNaN(d) ? null : d; }
+  if (Array.isArray(v) && v.length >= 3) { // [yyyy, m, d] 형태 대비
+    const d = new Date(v[0], v[1] - 1, v[2]);
+    return isNaN(d) ? null : d;
+  }
+  const d = new Date(String(v));
+  return isNaN(d) ? null : d;
+};
 
-const yymm = (d) => `${String(d.getFullYear()).slice(-2)}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+// 1) 포맷터(내부에서 toDate 사용)
+const yyyymm = (v) => {
+  const d = toDate(v);
+  if (!d) return "-- ----";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
 
-const yymmddDots = (s) => {
-    const d = new Date(s);
-    return `${String(d.getFullYear()).slice(-2)}.${String(d.getMonth()+1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+const yymm = (v) => {
+  const d = toDate(v);
+  if (!d) return "-- --";
+  return `${String(d.getFullYear()).slice(-2)}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const yymmddDots = (v) => {
+  const d = toDate(v);
+  if (!d) return "--.--.--";
+  return `${String(d.getFullYear()).slice(-2)}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 };
 
 const money = (n) => Number(n || 0).toLocaleString("ko-KR");
@@ -56,8 +78,8 @@ function CoverPage({ym}){
 function Col({req, seq}){
     if(!req) return <div className={styles.col} />
 
-    const no = `${yymm(new Date(req.requestDate))}-${String(seq).padStart(2, "0")}`;
-    const dt = yymmddDots(req.requestDate);
+    const no = `${yymm(req?.requestDate)}-${String(seq).padStart(2, "0")}`;
+    const dt = yymmddDots(req?.requestDate);
 
     return (
         <div className={styles.col}>
@@ -135,7 +157,6 @@ function MonthPage(){
             try{
                 setError("");
                 setFetching(true);
-                /* 추후 실제 경로에 따라 변경 필요함 */
                 const {year, month: mon} = parseYearMonth(month);
 
                 const res = await fetchWithAuth(`${API_BASE_SV}/approval/getMonthlyRequest`, {
