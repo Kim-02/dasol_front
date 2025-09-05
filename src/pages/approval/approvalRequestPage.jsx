@@ -87,8 +87,13 @@ function ApprovalRequestPage(){
     /* 부서 노드 펼침 상태 > 모든 노드 on/off */
     const [expandAll, setExpandAll] = useState(true);
 
+    /* 검색 */
     const orgSearchRef = useRef(null);
     const q = orgFilter.trim().toLowerCase();
+
+    /* 제출 시 중복 클릭 방지 */
+    const [submitting, setSubmitting] = useState(false);
+    const lockRef = useRef(false);
 
     useEffect(() => {
         (async () => {
@@ -190,6 +195,10 @@ function ApprovalRequestPage(){
                 alert("영수증 이미지를 첨부하세용");
                 return;
             }
+            if (lockRef.current) return;
+            lockRef.current = true;
+            setSubmitting(true);
+
             try {
                 const isoDate = toLocalDateTime(requestDate);
 
@@ -223,6 +232,9 @@ function ApprovalRequestPage(){
             } catch(err){
                 console.error(err);
                 alert(err.message || "요청 중 오류가 발생했습니다.")
+            } finally {
+                lockRef.current = false;
+                setSubmitting(false);
             }
         },[navigate, approverIds, receiptFile, accountNumber, requestDate, requestDetail, requestedAmount, title, approvalCode, user?.studentId, payerName, openDrawer]
     );
@@ -271,30 +283,37 @@ function ApprovalRequestPage(){
                 <section className={styles.card}>
                     <header>결재 신청</header>
                     <div className={styles.body}>
-                    <form className={styles.grid} onSubmit={handleSubmit} onReset={() => setTimeout(() => setOrgFilter(""), 0)}>
+                    <form className={styles.grid} onSubmit={handleSubmit} onReset={(e) => {
+                        e.preventDefault();
+                        setTitle(""); setAccountNumber(""); setRequestDetail("");
+                        setRequestedAmount(""); setApprovalCode(""); setPayerName("");
+                        setSelected(new Map()); setRequestDate(fmtDateYYYYMMDD(new Date()));
+                        setOrgFilter(""); setReceiptFile(null);
+                        if (receiptInputRef.current) receiptInputRef.current.value = "";
+                    }}>
                         <label className={styles.label} htmlFor="title">제목</label>
-                        <input id="title" className={styles.input} placeholder="예: 6월 홍보물 구입" required value={title} onChange={(e) => setTitle(e.target.value)}/>
+                        <input id="title" className={styles.input} placeholder="예: 6월 홍보물 구입" required value={title} onChange={(e) => setTitle(e.target.value)} disabled={submitting}/>
 
                         <label className={styles.label} htmlFor="accountNumber">계좌번호</label>
-                        <input id="accountNumber" className={styles.input} placeholder="숫자만 입력" inputMode="numeric" pattern="[0-9\- ]{4,}" required value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)}/>
+                        <input id="accountNumber" className={styles.input} placeholder="숫자만 입력" inputMode="numeric" pattern="[0-9\- ]{4,}" required value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} disabled={submitting}/>
 
                         <label className={styles.label} htmlFor="requestDate">신청 날짜</label>
-                        <input id="requestDate" className={styles.input} type="date" required value={requestDate ?? ""} onChange={(e)=>setRequestDate(e.target.value)}/>
+                        <input id="requestDate" className={styles.input} type="date" required value={requestDate ?? ""} onChange={(e)=>setRequestDate(e.target.value)} disabled={submitting}/>
 
                         <label className={styles.label} htmlFor="requestDetail">신청 내용</label>
-                        <textarea id="requestDetail" className={styles.textarea} placeholder="사용 내역을 자세히 입력하세요" required value={requestDetail} onChange={(e)=>setRequestDetail(e.target.value)}></textarea>
+                        <textarea id="requestDetail" className={styles.textarea} placeholder="사용 내역을 자세히 입력하세요" required value={requestDetail} onChange={(e)=>setRequestDetail(e.target.value)} disabled={submitting}></textarea>
 
                         <label className={styles.label} htmlFor="requestedAmount">신청 금액</label>
                         <div className={styles.row}>
-                        <input id="requestedAmount" className={styles.input} type="number" min="0" step="1" placeholder="예: 150000" required value={requestedAmount} onChange={(e)=>setRequestedAmount(e.target.value)}/>
+                        <input id="requestedAmount" className={styles.input} type="number" min="0" step="1" placeholder="예: 150000" required value={requestedAmount} onChange={(e)=>setRequestedAmount(e.target.value)} disabled={submitting}/>
                         <span className={styles.muted}></span>
                         </div>
 
                         <label className={styles.label} htmlFor="receiptFile">영수증 이미지</label>
-                        <input id="receiptFile" ref={receiptInputRef} className={styles.input} type="file" accept=".jpg,.png,.jpeg" required onChange={(e) => {const f = e.target.files?.[0] ?? null; setReceiptFile(f);}} />
+                        <input id="receiptFile" ref={receiptInputRef} className={styles.input} type="file" accept=".jpg,.png,.jpeg" required onChange={(e) => {const f = e.target.files?.[0] ?? null; setReceiptFile(f);}} disabled={submitting}/>
 
                         <label className={styles.label} htmlFor="approvalCode">코드</label>
-                        <select id="approvalCode" className={styles.select} required value={approvalCode} onChange={(e)=>setApprovalCode(e.target.value)}>
+                        <select id="approvalCode" className={styles.select} required value={approvalCode} onChange={(e)=>setApprovalCode(e.target.value)} disabled={submitting}>
                         <option value="" disabled>선택하세요</option>
                         <option value="210">210 사무용품비</option>
                         <option value="220">220 출장비</option>
@@ -311,11 +330,11 @@ function ApprovalRequestPage(){
                         </select>
 
                         <label className={styles.label} htmlFor="payerName">입금자명</label>
-                        <input id="payerName" className={styles.input} placeholder="예: 김OO / 동아리명" required value={payerName} onChange={(e)=>setPayerName(e.target.value)}/>
+                        <input id="payerName" className={styles.input} placeholder="예: 김OO / 동아리명" required value={payerName} onChange={(e)=>setPayerName(e.target.value)} disabled={submitting}/>
 
                         <div className={styles.label}>승인자 선택</div>
                         <div className={styles.row}>
-                        <input type="hidden" value={JSON.stringify(approverIds)}/>
+                        {/* <input type="hidden" value={JSON.stringify(approverIds)}/> */}
                         <div id="chips" className={styles.chips}>
                             {chips.length === 0 ? (
                                 <span className={styles.badge}>선택된 승인자 없음</span>
@@ -323,27 +342,21 @@ function ApprovalRequestPage(){
                                 <span className={styles.chip} key={p.memberId}>
                                     <b>{p.name}</b>
                                     <span className={styles.muted}>· {p.departmentName}/{p.roleName}</span>
-                                    <button type="button" className={styles.rm} aria-label="제거" onClick={() => removePerson(p.memberId)}>x</button>
+                                    <button type="button" className={styles.rm} aria-label="제거" onClick={() => removePerson(p.memberId)} disabled={submitting}>x</button>
                                 </span>
                             ))}
                         </div>
                         </div>
                         <div className={`${styles.label} ${styles["sr-only"]}`}>조직도</div>
                         <div className={styles.row}>
-                        <button type="button" className={styles.btn} onClick={openDrawer}>조직도에서 선택</button>
-                        <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={clearPerson}>전체 해제</button>
+                        <button type="button" className={styles.btn} onClick={openDrawer} disabled={submitting}>조직도에서 선택</button>
+                        <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={clearPerson} disabled={submitting}>전체 해제</button>
                         </div>
 
                         <div className={`${styles.label} ${styles["sr-only"]}`}>제출</div>
                         <div className={styles.row}>
-                        <button className={`${styles.btn} ${styles.primary}`} type="submit">신청서 제출</button>
-                        <button className={`${styles.btn} ${styles.ghost}`} type="reset" onClick={()=>{
-                            setTitle(""); setAccountNumber(""); setRequestDetail("");
-                            setRequestedAmount(""); setApprovalCode(""); setPayerName("");
-                            setSelected(new Map()); setRequestDate(fmtDateYYYYMMDD(new Date()));
-                            setOrgFilter(""); setReceiptFile(null);
-                            if (receiptInputRef.current) receiptInputRef.current.value = "";
-                        }}>초기화</button>
+                        <button className={`${styles.btn} ${styles.primary}`} type="submit" disabled={submitting} aria-busy={submitting}>{submitting ? "제출 중..." : "신청서 제출"}</button>
+                        <button className={`${styles.btn} ${styles.ghost}`} type="reset" disabled={submitting}>초기화</button>
                         </div>
                     </form>
                     </div>
