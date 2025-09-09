@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
-import ApprovalSkeleton from './pages/approval/approvalSkeleton';
 import ApprovalApproved from './pages/approval/approvalApproved';
 import ApprovalRequestPage from './pages/approval/approvalRequestPage';
 import MonthPage from './pages/approval/monthPage';
@@ -21,7 +20,6 @@ function App() {
         <Route path="/signuppage" element={<Signup />} />
         <Route path="/main" element={<MainPage />} />
         <Route path="/userpg" element={<UserPg />} />        
-        <Route path="/approval_skeleton" element={<ApprovalSkeleton />} />
         <Route path="/approval_approved" element={<ApprovalApproved />} />
         <Route path="/approval_req" element={<ApprovalRequestPage />} />
         <Route path="/monthly_page" element={<MonthPage />} />
