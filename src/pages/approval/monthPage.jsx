@@ -61,6 +61,17 @@ const parseYearMonth = (ymStr) => {
   return { year: y, month: m };
 };
 
+// 서버 응답 래퍼 → 화면에서 쓰는 아이템으로 평탄화
+const normalizeItem = ({ approvalRequests = {}, approvers = [], byteFile = null } = {}) => {
+  const receiptFile = approvalRequests.receiptFile ?? byteFile ?? null;
+  return {
+    ...approvalRequests,          // requestDate, title, requestedAmount, approvalCode, ...
+    approvers,                    // 필요 시 사용
+    receiptFile,                  // 이미지 통일 (byteFile 보완)
+  };
+};
+
+
 function CoverPage({ym}){
     return(
         <section className={styles.page}>
@@ -164,22 +175,19 @@ function MonthPage(){
                     body: JSON.stringify({year, month: mon})
                 });
 
-                if(!res.ok){
-                    const err = await res.json().catch(() => ({}));
-                    throw new Error(err.message || res.statusText);
+                if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || res.statusText);
                 }
 
                 const json = await res.json();
-                /* response에 맞춰서 파싱 */
-                let arr = json?.result?.approvalRequests || json?.approvalRequests || json?.result || json || [];
-                if (!Array.isArray(arr)) arr = [];
 
-                arr = arr.map(it => ({
-                    ...it,
-                    requestedAmount: it.requestedAmount ?? it.requestAmount ?? 0
-                }));
+                // result가 래퍼 배열이므로 평탄화
+                let arr = Array.isArray(json?.result) ? json.result.map(normalizeItem) : [];
+                // 금액 키 보정(혹시 다른 이름으로 올 때 대비)
+                arr = arr.map(it => ({ ...it, requestedAmount: it.requestedAmount ?? it.requestAmount ?? it.amount ?? 0 }));
 
-                if(alive) setRequests(arr);
+                if (alive) setRequests(arr);
             } catch (e) {
                 if (alive) setError(e.message || "데이터 로드 실패");
             } finally {
@@ -203,14 +211,12 @@ function MonthPage(){
     }, [navigate]);
 
     const pairs = useMemo(() => {
-        const inMonth = (requests || []).slice().sort(
-        (a, b) => new Date(a.requestDate) - new Date(b.requestDate)
-        );
-        const out = [];
-        for (let i = 0; i < inMonth.length; i+=2){
-        out.push([inMonth[i], inMonth[i+1] || null]);
-        }
-        return out;
+    const inMonth = (requests || [])
+        .slice()
+        .sort((a, b) => (toDate(a.requestDate)?.getTime() ?? 0) - (toDate(b.requestDate)?.getTime() ?? 0));
+    const out = [];
+    for (let i = 0; i < inMonth.length; i += 2) out.push([inMonth[i], inMonth[i + 1] || null]);
+    return out;
     }, [requests]);
 
     return(
