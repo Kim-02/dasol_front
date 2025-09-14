@@ -1,6 +1,6 @@
 import { fetchWithAuth } from "./auth.js";
 
-const API_BASE_URL_EVENT = 'http://3.34.245.155/api/event_post';
+const API_BASE_URL_EVENT = 'https://3.34.245.155/api/event_post';
 
 /* 이벤트 게시판 관련 function */
 

@@ -3,7 +3,7 @@ import styles from "./signup.module.css"
 import {Link, useNavigate} from "react-router-dom";
 import { fetchWithAuth } from "../../utils/auth";
 
-const API_BASE = "http://3.34.245.155/api";
+const API_BASE = "https://3.34.245.155/api";
 
 function Signup(){
     const navigate = useNavigate();

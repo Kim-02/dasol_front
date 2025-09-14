@@ -3,7 +3,7 @@ import {Link, useNavigate} from "react-router-dom";
 import styles from "./login.module.css"
 import { fetchWithAuth } from "../../utils/auth";
 
-const API_BASE = "http://3.34.245.155/api";
+const API_BASE = "https://3.34.245.155/api";
 function Login(){
     const navigate = useNavigate();
     const [form, setForm] = useState({

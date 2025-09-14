@@ -1,7 +1,7 @@
 import { doLogout} from "./auth.js"
 import { fetchWithAuth } from "./auth.js";
 
-const API_BASE_URL_BOARD = 'http://3.34.245.155/api/document';
+const API_BASE_URL_BOARD = 'https://3.34.245.155/api/document';
 
 /* 공용 함수 */
 export async function handleLogout(navigate){

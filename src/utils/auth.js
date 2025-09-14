@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://3.34.245.155/api';
+const API_BASE_URL = 'https://3.34.245.155/api';
 
 // 로그인
 export async function doLogin(studentID, password){
@@ -58,7 +58,6 @@ export async function doSignup(body){
 
 // 사용자 정보 로드, 토큰 없으면 loginPage로 리다이렉트
 export async function loadUserInfo(){
-  /* const res = await fetchWithAuth(`${API_BASE_URL}/main/user_info`); */
   const res = await fetchWithAuth(`${API_BASE_URL}/user/profile`);
 
   if (!res.ok){
