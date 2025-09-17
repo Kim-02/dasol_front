@@ -43,7 +43,7 @@ function MainPage(){
 
             <main className={styles.main}>
                 <header className={styles.header}>
-                <div>로그인: <b>{user ? `${user.name ?? "-"} (${user.studentId ?? "-"}）` : "-"}</b></div>
+                <div>로그인: <b>{user ? `${user.name ?? "-"} (${user.studentId ?? "-"})` : "-"}</b></div>
                 <button className={styles.logout} onClick={onLogout}>로그아웃</button>
                 </header>
 
