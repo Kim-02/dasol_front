@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
 import styles from "./monthly.module.css";
 
-const API_BASE_SV = 'https://back.kutcse.com';
+const API_BASE_SV = 'https://back.kutcse.com/api';
 
 // 0) 안전 파서
 const toDate = (v) => {
