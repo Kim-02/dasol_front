@@ -174,6 +174,7 @@ function Signup(){
             /* TODO: 실제 가입 API */
             const res = await fetch(`${API_BASE}/auth/signup`, {
                 method: 'POST',
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)});
                 if (!res.ok) throw new Error('가입 실패');
 
