@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loadUserInfo, fetchWithAuth, doLogout } from "../../utils/auth";
 import styles from "./approvalPage.module.css";
 
-const API_BASE = "https://3.34.245.155/api";
+const API_BASE = "https://back.kutcse.com";
 
 /* ====== 유틸 ====== */
 const fmt = (dt) => new Intl.DateTimeFormat("ko-KR", {

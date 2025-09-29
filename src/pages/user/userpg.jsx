@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { fetchWithAuth, doLogout } from "../../utils/auth";
 import styles from "./userpg.module.css";
 
-const API_BASE = "https://3.34.245.155/api";
+const API_BASE = "https://back.kutcse.com";
 
 /* UI 보조함수 */
 const pad2 = (n) => String(n).padStart(2, "0");
