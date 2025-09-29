@@ -118,6 +118,7 @@ function Signup(){
         /* TODO 실제 메일 전송 API */
         await fetch (`${API_BASE}/auth/verify`, {
             method: 'POST',
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({email: form.email})
         });
 
