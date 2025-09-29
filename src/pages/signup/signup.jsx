@@ -2,7 +2,7 @@ import React, {useState, useEffect, useRef, useMemo} from "react";
 import styles from "./signup.module.css"
 import {Link, useNavigate} from "react-router-dom";
 
-const API_BASE = "https://back.kutcse.com";
+const API_BASE = "https://back.kutcse.com/api";
 
 function Signup(){
     const navigate = useNavigate();
