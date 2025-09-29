@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://3.34.245.155/api';
+const API_BASE_URL = 'https://back.kutcse.com/api';
 
 // 로그인
 export async function doLogin(studentID, password){
