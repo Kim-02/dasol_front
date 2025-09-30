@@ -180,7 +180,7 @@ function Signup(){
 
             console.log("POST payload", payload);
             showToast("가입 요청을 전송했습니다.");
-            navigate('/login');
+            navigate('/');
         } catch (err){
             console.error(err);
             showToast("오류가 발생했습니다. 다시 시도하세요.", true);
